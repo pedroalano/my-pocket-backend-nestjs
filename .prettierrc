@@ -1,4 +1,5 @@
 {
+  "_comment": "This is the default Prettier configuration used by NestJS projects",
   "singleQuote": true,
   "trailingComma": "all"
 }
