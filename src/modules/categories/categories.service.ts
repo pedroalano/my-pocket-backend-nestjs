@@ -1,32 +1,29 @@
 import { Injectable } from '@nestjs/common';
-
-type CategoryDto = {
-  name: string;
-  type: string;
-};
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
-  private categories: { id: string; name: string; type: string }[] = [];
+  private categories: { id: number; name: string; type: string }[] = [];
 
   getAllCategories() {
     return this.categories;
   }
 
-  getCategoryById(id: string) {
+  getCategoryById(id: number) {
     return this.categories.find((category) => category.id === id);
   }
 
-  createCategory(createCategoryDto: CategoryDto) {
+  createCategory(createCategoryDto: CreateCategoryDto) {
     const newCategory = {
-      id: (this.categories.length + 1).toString(),
+      id: this.categories.length + 1,
       ...createCategoryDto,
     };
     this.categories.push(newCategory);
     return newCategory;
   }
 
-  updateCategory(id: string, updateCategoryDto: CategoryDto) {
+  updateCategory(id: number, updateCategoryDto: UpdateCategoryDto) {
     const categoryIndex = this.categories.findIndex(
       (category) => category.id === id,
     );
@@ -37,7 +34,7 @@ export class CategoriesService {
     return null;
   }
 
-  deleteCategory(id: string) {
+  deleteCategory(id: number) {
     const categoryIndex = this.categories.findIndex(
       (category) => category.id === id,
     );
