@@ -7,6 +7,7 @@ import {
   Delete,
   Put,
 } from '@nestjs/common';
+import { CategoriesService } from './categories.service';
 
 type categoryDto = {
   name: string;
@@ -15,23 +16,21 @@ type categoryDto = {
 
 @Controller('categories')
 export class CategoriesController {
+  constructor(private readonly categoriesService: CategoriesService) {}
+
   @Get()
   getAllCategories() {
-    // Logic to get all categories
-    return {};
+    return this.categoriesService.getAllCategories();
   }
 
   @Get(':id')
   getCategoryById(@Param('id') id: string) {
-    // Logic to get a category by ID
-    return { id };
+    return this.categoriesService.getCategoryById(id);
   }
 
   @Post()
   createCategory(@Body() createCategoryDto: categoryDto) {
-    // Logic to create a new category
-    console.log(createCategoryDto);
-    return createCategoryDto;
+    return this.categoriesService.createCategory(createCategoryDto);
   }
 
   @Put(':id')
@@ -39,13 +38,11 @@ export class CategoriesController {
     @Param('id') id: string,
     @Body() updateCategoryDto: categoryDto,
   ) {
-    // Logic to update a category by ID
-    return { id, ...updateCategoryDto };
+    return this.categoriesService.updateCategory(id, updateCategoryDto);
   }
 
   @Delete(':id')
   deleteCategory(@Param('id') id: string) {
-    // Logic to delete a category by ID
-    return { deletedId: id };
+    return this.categoriesService.deleteCategory(id);
   }
 }
