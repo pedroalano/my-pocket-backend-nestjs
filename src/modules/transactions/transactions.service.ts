@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { UpdateTransactionDto } from './dto/update-transaction.dto';
 
 @Injectable()
 export class TransactionsService {
@@ -18,12 +20,7 @@ export class TransactionsService {
     return this.transactions.find((transaction) => transaction.id === id);
   }
 
-  createTransaction(createTransactionDto: {
-    amount: number;
-    type: string;
-    categoryId: number;
-    date: string;
-  }) {
+  createTransaction(createTransactionDto: CreateTransactionDto) {
     const newTransaction = {
       id: this.transactions.length + 1,
       ...createTransactionDto,
@@ -32,15 +29,7 @@ export class TransactionsService {
     return newTransaction;
   }
 
-  updateTransaction(
-    id: number,
-    updateTransactionDto: {
-      amount: number;
-      type: string;
-      categoryId: number;
-      date: string;
-    },
-  ) {
+  updateTransaction(id: number, updateTransactionDto: UpdateTransactionDto) {
     const transactionIndex = this.transactions.findIndex(
       (transaction) => transaction.id === id,
     );

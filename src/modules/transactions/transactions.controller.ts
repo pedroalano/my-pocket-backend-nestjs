@@ -8,14 +8,8 @@ import {
   Put,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
-
-type TransactionDto = {
-  amount: number;
-  type: string;
-  categoryId: number;
-  date: string;
-};
-
+import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { UpdateTransactionDto } from './dto/update-transaction.dto';
 @Controller('transactions')
 export class TransactionController {
   constructor(private readonly transactionsService: TransactionsService) {}
@@ -31,14 +25,14 @@ export class TransactionController {
   }
 
   @Post()
-  createTransaction(@Body() createTransactionDto: TransactionDto) {
+  createTransaction(@Body() createTransactionDto: CreateTransactionDto) {
     return this.transactionsService.createTransaction(createTransactionDto);
   }
 
   @Put(':id')
   updateTransaction(
     @Param('id') id: number,
-    @Body() updateTransactionDto: TransactionDto,
+    @Body() updateTransactionDto: UpdateTransactionDto,
   ) {
     return this.transactionsService.updateTransaction(id, updateTransactionDto);
   }
