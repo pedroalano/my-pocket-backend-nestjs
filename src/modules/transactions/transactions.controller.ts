@@ -7,41 +7,32 @@ import {
   Delete,
   Put,
 } from '@nestjs/common';
+import { TransactionsService } from './transactions.service';
 
 type TransactionDto = {
-  value: number;
-  date: string;
+  amount: number;
+  type: string;
   categoryId: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  date: string;
 };
 
 @Controller('transactions')
 export class TransactionController {
-  constructor() {}
+  constructor(private readonly transactionsService: TransactionsService) {}
 
   @Get()
   getAllTransactions() {
-    return [];
+    return this.transactionsService.getAllTransactions();
   }
 
   @Get(':id')
   getTransactionById(@Param('id') id: number) {
-    return [
-      {
-        id: id,
-        value: 500.0,
-        date: '2026-01-31',
-        categoryId: 1,
-        createdAt: '2026-01-31',
-        updatedAt: '2026-01-31',
-      },
-    ];
+    return this.transactionsService.getTransactionById(id);
   }
 
   @Post()
   createTransaction(@Body() createTransactionDto: TransactionDto) {
-    return createTransactionDto;
+    return this.transactionsService.createTransaction(createTransactionDto);
   }
 
   @Put(':id')
@@ -49,11 +40,11 @@ export class TransactionController {
     @Param('id') id: number,
     @Body() updateTransactionDto: TransactionDto,
   ) {
-    return updateTransactionDto;
+    return this.transactionsService.updateTransaction(id, updateTransactionDto);
   }
 
   @Delete(':id')
   deleteTransaction(@Param('id') id: number) {
-    return [{ message: `Transaction with id ${id} deleted successfully.` }];
+    return this.transactionsService.deleteTransaction(id);
   }
 }
