@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
+import { CategoriesService } from '../categories/categories.service';
 
 @Injectable()
 export class TransactionsService {
@@ -10,7 +11,10 @@ export class TransactionsService {
     type: string;
     categoryId: number;
     date: string;
+    description: string;
   }[] = [];
+
+  constructor(private categoriesService: CategoriesService) {}
 
   getAllTransactions() {
     return this.transactions;
@@ -21,6 +25,16 @@ export class TransactionsService {
   }
 
   createTransaction(createTransactionDto: CreateTransactionDto) {
+    // Validate category existence
+    const category = this.categoriesService.getCategoryById(
+      createTransactionDto.categoryId,
+    );
+    if (!category) {
+      throw new BadRequestException(
+        `Category with ID ${createTransactionDto.categoryId} does not exist`,
+      );
+    }
+
     const newTransaction = {
       id: this.transactions.length + 1,
       ...createTransactionDto,
@@ -30,11 +44,26 @@ export class TransactionsService {
   }
 
   updateTransaction(id: number, updateTransactionDto: UpdateTransactionDto) {
+    // Validate category existence if categoryId is being updated
+    if (updateTransactionDto.categoryId !== undefined) {
+      const category = this.categoriesService.getCategoryById(
+        updateTransactionDto.categoryId,
+      );
+      if (!category) {
+        throw new BadRequestException(
+          `Category with ID ${updateTransactionDto.categoryId} does not exist`,
+        );
+      }
+    }
+
     const transactionIndex = this.transactions.findIndex(
       (transaction) => transaction.id === id,
     );
     if (transactionIndex > -1) {
-      this.transactions[transactionIndex] = { id, ...updateTransactionDto };
+      this.transactions[transactionIndex] = {
+        ...this.transactions[transactionIndex],
+        ...updateTransactionDto,
+      };
       return this.transactions[transactionIndex];
     }
     return null;
