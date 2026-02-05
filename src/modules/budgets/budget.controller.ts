@@ -7,36 +7,39 @@ import {
   Delete,
   Put,
 } from '@nestjs/common';
+import { BudgetService } from './budget.service';
+
+type Budget = { id: number; amount: number; categoryId: number; month: string };
 
 @Controller('budgets')
 export class BudgetController {
-  constructor() {}
+  constructor(private readonly budgetService: BudgetService) {}
 
   @Get()
   getAllBudgets() {
-    return [];
+    return this.budgetService.getAllBudgets();
   }
 
   @Get(':id')
   getBudgetById(@Param('id') id: number) {
-    return { id };
+    return this.budgetService.getBudgetById(id);
   }
 
   @Post()
-  createBudget(@Body() createBudgetDto: [{ name: string; amount: number }]) {
-    return createBudgetDto;
+  createBudget(@Body() createBudgetDto: Omit<Budget, 'id'>) {
+    return this.budgetService.createBudget(createBudgetDto);
   }
 
   @Put(':id')
   updateBudget(
     @Param('id') id: number,
-    @Body() updateBudgetDto: [{ name: string; amount: number }],
+    @Body() updateBudgetDto: Partial<Omit<Budget, 'id'>>,
   ) {
-    return updateBudgetDto;
+    return this.budgetService.updateBudget(id, updateBudgetDto);
   }
 
   @Delete(':id')
   deleteBudget(@Param('id') id: number) {
-    return { id };
+    return this.budgetService.deleteBudget(id);
   }
 }
