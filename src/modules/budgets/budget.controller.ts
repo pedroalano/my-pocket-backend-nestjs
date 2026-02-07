@@ -8,8 +8,8 @@ import {
   Put,
 } from '@nestjs/common';
 import { BudgetService } from './budget.service';
-import type { CreateBudgetDto } from './dto/create-budget.dto';
-import type { UpdateBudgetDto } from './dto/update-budget.dto';
+import { CreateBudgetDto } from './dto/create-budget.dto';
+import { UpdateBudgetDto } from './dto/update-budget.dto';
 
 @Controller('budgets')
 export class BudgetController {
@@ -32,11 +32,11 @@ export class BudgetController {
 
   @Put(':id')
   updateBudget(
-    @Param('id') id: string,
+    @Param('id') id: number,
     @Body()
-    budgetData: Partial<UpdateBudgetDto>,
+    budgetData: UpdateBudgetDto,
   ) {
-    return this.budgetService.updateBudget(+id, budgetData);
+    return this.budgetService.updateBudget(id, budgetData);
   }
 
   @Delete(':id')
