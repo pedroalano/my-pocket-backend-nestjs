@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
+import { CategoriesService } from '../categories/categories.service';
+import { BadRequestException } from '@nestjs/common';
 
 @Injectable()
 export class BudgetService {
@@ -8,9 +10,12 @@ export class BudgetService {
     id: number;
     amount: number;
     categoryId: number;
-    month: string;
+    month: number;
+    year: number;
     type: string;
   }[] = [];
+
+  constructor(private categoriesService: CategoriesService) {}
 
   getAllBudgets() {
     return this.budgets;
@@ -21,6 +26,15 @@ export class BudgetService {
   }
 
   createBudget(budgetData: CreateBudgetDto) {
+    const category = this.categoriesService.getCategoryById(
+      budgetData.categoryId,
+    );
+    if (!category) {
+      throw new BadRequestException(
+        `Category with ID ${budgetData.categoryId} does not exist`,
+      );
+    }
+
     const newBudget = {
       id: this.budgets.length + 1,
       ...budgetData,
@@ -29,7 +43,17 @@ export class BudgetService {
     return newBudget;
   }
 
-  updateBudget(id: number, budgetData: Partial<UpdateBudgetDto>) {
+  updateBudget(id: number, budgetData: UpdateBudgetDto) {
+    if (budgetData.categoryId !== undefined) {
+      const category = this.categoriesService.getCategoryById(
+        budgetData.categoryId,
+      );
+      if (!category) {
+        throw new BadRequestException(
+          `Category with ID ${budgetData.categoryId} does not exist`,
+        );
+      }
+    }
     const budgetIndex = this.budgets.findIndex((budget) => budget.id === id);
     if (budgetIndex > -1) {
       this.budgets[budgetIndex] = {
