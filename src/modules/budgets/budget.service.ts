@@ -185,4 +185,87 @@ export class BudgetService {
       utilizationPercentage,
     };
   }
+
+  getTransactionsForBudget(budgetId: number): any[] {
+    const budget = this.getBudgetById(budgetId);
+    if (!budget) {
+      return [];
+    }
+
+    const transactions = this.transactionsService.getAllTransactions();
+    return transactions.filter((transaction) => {
+      // Match category and type
+      if (
+        transaction.categoryId !== budget.categoryId ||
+        transaction.type !== budget.type
+      ) {
+        return false;
+      }
+
+      // Extract month and year from transaction date (ISO format: YYYY-MM-DD)
+      const transactionDate = new Date(transaction.date);
+      const transactionMonth = transactionDate.getMonth() + 1;
+      const transactionYear = transactionDate.getFullYear();
+
+      // Check if transaction is within budget period
+      return (
+        transactionMonth === budget.month && transactionYear === budget.year
+      );
+    });
+  }
+
+  getBudgetWithCategory(budgetId: number): any {
+    const budget = this.getBudgetById(budgetId);
+    if (!budget) {
+      return null;
+    }
+
+    const category = this.categoriesService.getCategoryById(budget.categoryId);
+
+    return {
+      ...budget,
+      category: category || null,
+    };
+  }
+
+  getBudgetsWithTransactions(budgetId: number): any {
+    const budget = this.getBudgetById(budgetId);
+    if (!budget) {
+      return null;
+    }
+
+    const category = this.categoriesService.getCategoryById(budget.categoryId);
+    const transactions = this.getTransactionsForBudget(budgetId);
+    const spent = this.getSpentAmount(budgetId);
+    const remaining = this.getRemainingBudget(budgetId);
+    const utilizationPercentage =
+      budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
+
+    return {
+      ...budget,
+      category: category || null,
+      transactions,
+      spent,
+      remaining,
+      utilizationPercentage,
+    };
+  }
+
+  getBudgetsByCategory(categoryId: number): any[] {
+    return this.budgets
+      .filter((budget) => budget.categoryId === categoryId)
+      .map((budget) => {
+        const spent = this.getSpentAmount(budget.id);
+        const remaining = budget.amount - spent;
+        const utilizationPercentage =
+          budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
+
+        return {
+          ...budget,
+          spent,
+          remaining,
+          utilizationPercentage,
+        };
+      });
+  }
 }

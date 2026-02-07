@@ -25,6 +25,16 @@ export class BudgetController {
     return this.budgetService.getBudgetById(+id);
   }
 
+  @Get(':id/details')
+  getBudgetsWithTransactions(@Param('id') id: string) {
+    return this.budgetService.getBudgetsWithTransactions(+id);
+  }
+
+  @Get('category/:categoryId')
+  getBudgetsByCategory(@Param('categoryId') categoryId: string) {
+    return this.budgetService.getBudgetsByCategory(+categoryId);
+  }
+
   @Post()
   createBudget(@Body() budgetData: CreateBudgetDto) {
     return this.budgetService.createBudget(budgetData);
