@@ -20,6 +20,11 @@ enum TransactionType {
   EXPENSE
 }
 
+enum BudgetType {
+  EXPENSE
+  SAVINGS
+}
+
 model Category {
   id           String   @id @default(uuid()) @db.Uuid
   name         String
@@ -43,7 +48,15 @@ model Transaction {
 }
 
 model Budget {
-  id           String   @id @default(uuid()) @db.Uuid
-  categoryId   String   @db.Uuid
-  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  id           String     @id @default(uuid()) @db.Uuid
+  amount       Decimal    @db.Decimal(10, 2)
+  month        Int
+  year         Int
+  type         BudgetType
+  categoryId   String     @db.Uuid
+  category     Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([categoryId, month, year, type])
 }
