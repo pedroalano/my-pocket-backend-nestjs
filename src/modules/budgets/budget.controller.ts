@@ -6,6 +6,7 @@ import {
   Param,
   Delete,
   Put,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { BudgetService } from './budget.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
@@ -16,35 +17,37 @@ export class BudgetController {
   constructor(private readonly budgetService: BudgetService) {}
 
   @Get()
-  getAllBudgets() {
+  async getAllBudgets() {
     return this.budgetService.getAllBudgets();
   }
 
   @Get(':id')
-  getBudgetById(@Param('id') id: string) {
-    return this.budgetService.getBudgetById(+id);
+  async getBudgetById(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.budgetService.getBudgetById(id);
   }
 
   @Get(':id/details')
-  getBudgetsWithTransactions(@Param('id') id: string) {
-    return this.budgetService.getBudgetsWithTransactions(+id);
+  async getBudgetsWithTransactions(
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return this.budgetService.getBudgetsWithTransactions(id);
   }
 
   @Get('category/:categoryId')
   getBudgetsByCategory(
-    @Param('categoryId') categoryId: string,
+    @Param('categoryId', new ParseUUIDPipe()) categoryId: string,
   ): ReturnType<BudgetService['getBudgetsByCategory']> {
     return this.budgetService.getBudgetsByCategory(categoryId);
   }
 
   @Post()
-  createBudget(@Body() budgetData: CreateBudgetDto) {
+  async createBudget(@Body() budgetData: CreateBudgetDto) {
     return this.budgetService.createBudget(budgetData);
   }
 
   @Put(':id')
-  updateBudget(
-    @Param('id') id: number,
+  async updateBudget(
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body()
     budgetData: UpdateBudgetDto,
   ) {
@@ -52,7 +55,7 @@ export class BudgetController {
   }
 
   @Delete(':id')
-  deleteBudget(@Param('id') id: number) {
+  async deleteBudget(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.budgetService.deleteBudget(id);
   }
 }

@@ -1,17 +1,207 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BudgetType, Prisma, TransactionType } from '@prisma/client';
 import { BudgetService } from './budget.service';
 import { CategoriesService } from '../categories/categories.service';
-import { TransactionsService } from '../transactions/transactions.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
+import { PrismaService } from '../shared/prisma.service';
+
+type BudgetRecord = {
+  id: string;
+  amount: number;
+  categoryId: string;
+  month: number;
+  year: number;
+  type: BudgetType;
+};
+
+type TransactionRecord = {
+  id: string;
+  amount: number;
+  categoryId: string;
+  type: TransactionType;
+  date: Date;
+  description: string | null;
+};
+
+const stripUndefined = <T extends Record<string, any>>(value: T) =>
+  Object.fromEntries(
+    Object.entries(value).filter(([, fieldValue]) => fieldValue !== undefined),
+  );
+
+const buildCategory = (id: string, name: string) => ({
+  id,
+  name,
+  type: 'expense',
+  createdAt: new Date('2025-01-01T00:00:00.000Z'),
+  updatedAt: new Date('2025-01-01T00:00:00.000Z'),
+});
+
+const createPrismaMock = () => {
+  let budgets: BudgetRecord[] = [];
+  let transactions: TransactionRecord[] = [];
+  let budgetIndex = 0;
+  let transactionIndex = 0;
+  const budgetIds = [
+    'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    'cccccccc-cccc-cccc-cccc-cccccccccccc',
+  ];
+  const transactionIds = [
+    'dddddddd-dddd-dddd-dddd-dddddddddddd',
+    'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+    'ffffffff-ffff-ffff-ffff-ffffffffffff',
+    '11111111-2222-3333-4444-555555555555',
+  ];
+
+  const matchesBudgetUnique = (budget: BudgetRecord, compare: BudgetRecord) =>
+    budget.categoryId === compare.categoryId &&
+    budget.month === compare.month &&
+    budget.year === compare.year &&
+    budget.type === compare.type;
+
+  return {
+    budget: {
+      findMany: jest.fn(({ where } = {}) => {
+        if (!where) {
+          return budgets;
+        }
+        return budgets.filter(
+          (budget) => budget.categoryId === where.categoryId,
+        );
+      }),
+      findUnique: jest.fn(
+        ({ where: { id } }) =>
+          budgets.find((budget) => budget.id === id) ?? null,
+      ),
+      create: jest.fn(({ data }) => {
+        const payload = stripUndefined(data) as Omit<BudgetRecord, 'id'>;
+        const nextBudget: BudgetRecord = {
+          id:
+            budgetIds[budgetIndex++] ?? 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+          ...payload,
+        };
+        const duplicate = budgets.find((budget) =>
+          matchesBudgetUnique(budget, nextBudget),
+        );
+        if (duplicate) {
+          throw new Prisma.PrismaClientKnownRequestError(
+            'Unique constraint failed',
+            {
+              code: 'P2002',
+              clientVersion: 'test',
+            },
+          );
+        }
+        budgets.push(nextBudget);
+        return nextBudget;
+      }),
+      update: jest.fn(({ where: { id }, data }) => {
+        const index = budgets.findIndex((budget) => budget.id === id);
+        const payload = stripUndefined(data) as Partial<BudgetRecord>;
+        const updated = {
+          ...budgets[index],
+          ...payload,
+        } as BudgetRecord;
+        const duplicate = budgets.find(
+          (budget) => budget.id !== id && matchesBudgetUnique(budget, updated),
+        );
+        if (duplicate) {
+          throw new Prisma.PrismaClientKnownRequestError(
+            'Unique constraint failed',
+            {
+              code: 'P2002',
+              clientVersion: 'test',
+            },
+          );
+        }
+        budgets[index] = updated;
+        return updated;
+      }),
+      delete: jest.fn(({ where: { id } }) => {
+        const index = budgets.findIndex((budget) => budget.id === id);
+        const [removed] = budgets.splice(index, 1);
+        return removed;
+      }),
+    },
+    transaction: {
+      findMany: jest.fn(({ where }) => {
+        if (!where) {
+          return transactions;
+        }
+        const { categoryId, type, date } = where;
+        const gte = date?.gte as Date | undefined;
+        const lt = date?.lt as Date | undefined;
+        return transactions.filter((transaction) => {
+          if (categoryId && transaction.categoryId !== categoryId) {
+            return false;
+          }
+          if (type && transaction.type !== type) {
+            return false;
+          }
+          if (gte && transaction.date < gte) {
+            return false;
+          }
+          if (lt && transaction.date >= lt) {
+            return false;
+          }
+          return true;
+        });
+      }),
+      aggregate: jest.fn(({ where }) => {
+        const { categoryId, type, date } = where;
+        const gte = date?.gte as Date | undefined;
+        const lt = date?.lt as Date | undefined;
+        const sum = transactions
+          .filter((transaction) => {
+            if (categoryId && transaction.categoryId !== categoryId) {
+              return false;
+            }
+            if (type && transaction.type !== type) {
+              return false;
+            }
+            if (gte && transaction.date < gte) {
+              return false;
+            }
+            if (lt && transaction.date >= lt) {
+              return false;
+            }
+            return true;
+          })
+          .reduce((total, transaction) => total + transaction.amount, 0);
+        return { _sum: { amount: sum } };
+      }),
+    },
+    __setTransactions: (data: TransactionRecord[]) => {
+      transactions = data.map((transaction) => ({ ...transaction }));
+    },
+    __reset: () => {
+      budgets = [];
+      transactions = [];
+      budgetIndex = 0;
+      transactionIndex = 0;
+    },
+    __addTransaction: (data: Omit<TransactionRecord, 'id'>) => {
+      const transaction: TransactionRecord = {
+        id:
+          transactionIds[transactionIndex++] ??
+          '99999999-9999-9999-9999-999999999999',
+        ...data,
+      };
+      transactions.push(transaction);
+      return transaction;
+    },
+  };
+};
 
 describe('BudgetService', () => {
   let service: BudgetService;
   let categoriesService: CategoriesService;
-  let transactionsService: TransactionsService;
+  let prismaMock: ReturnType<typeof createPrismaMock>;
   const categoryId = '11111111-1111-1111-1111-111111111111';
   const otherCategoryId = '22222222-2222-2222-2222-222222222222';
+  const missingBudgetId = '33333333-3333-3333-3333-333333333333';
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -24,25 +214,20 @@ describe('BudgetService', () => {
           },
         },
         {
-          provide: TransactionsService,
-          useValue: {
-            getAllTransactions: jest.fn(),
-          },
+          provide: PrismaService,
+          useValue: (prismaMock = createPrismaMock()),
         },
       ],
     }).compile();
 
     service = module.get<BudgetService>(BudgetService);
     categoriesService = module.get<CategoriesService>(CategoriesService);
-    transactionsService = module.get<TransactionsService>(TransactionsService);
+    prismaMock.__reset();
 
     // Default mock return values
     jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
-      id: categoryId,
-      name: 'Groceries',
-      type: 'expense',
-    } as any);
-    jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([]);
+      ...buildCategory(categoryId, 'Groceries'),
+    });
   });
 
   it('should be defined', () => {
@@ -56,14 +241,14 @@ describe('BudgetService', () => {
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
 
       const result = await service.createBudget(createDto);
 
       expect(result).toEqual({
-        id: 1,
         ...createDto,
+        id: result.id,
       });
       expect(categoriesService.getCategoryById).toHaveBeenCalledWith(
         categoryId,
@@ -76,7 +261,7 @@ describe('BudgetService', () => {
         categoryId,
         month: 0,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
 
       await expect(service.createBudget(createDto)).rejects.toThrow(
@@ -93,7 +278,7 @@ describe('BudgetService', () => {
         categoryId,
         month: 13,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
 
       await expect(service.createBudget(createDto)).rejects.toThrow(
@@ -105,14 +290,20 @@ describe('BudgetService', () => {
     });
 
     it('should throw BadRequestException when category does not exist', async () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue(null);
+      jest
+        .spyOn(categoriesService, 'getCategoryById')
+        .mockRejectedValue(
+          new NotFoundException(
+            `Category with ID ${otherCategoryId} not found`,
+          ),
+        );
 
       const createDto: CreateBudgetDto = {
         amount: 500,
         categoryId: otherCategoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
 
       await expect(service.createBudget(createDto)).rejects.toThrow(
@@ -129,7 +320,7 @@ describe('BudgetService', () => {
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
 
       await service.createBudget(createDto);
@@ -138,7 +329,7 @@ describe('BudgetService', () => {
         BadRequestException,
       );
       await expect(service.createBudget(createDto)).rejects.toThrow(
-        `Budget for category ${categoryId}, type expense, month 1, and year 2026 already exists`,
+        `Budget for category ${categoryId}, type ${BudgetType.EXPENSE}, month 1, and year 2026 already exists`,
       );
     });
 
@@ -148,7 +339,7 @@ describe('BudgetService', () => {
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
 
       const createDto2: CreateBudgetDto = {
@@ -156,15 +347,14 @@ describe('BudgetService', () => {
         categoryId,
         month: 2,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
 
       const result1 = await service.createBudget(createDto1);
       const result2 = await service.createBudget(createDto2);
 
-      expect(result1.id).toBe(1);
-      expect(result2.id).toBe(2);
-      expect(service.getAllBudgets()).toHaveLength(2);
+      expect(result1.id).not.toBe(result2.id);
+      expect(await service.getAllBudgets()).toHaveLength(2);
     });
   });
 
@@ -175,7 +365,7 @@ describe('BudgetService', () => {
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
       await service.createBudget(createDto);
     });
@@ -185,15 +375,16 @@ describe('BudgetService', () => {
         amount: 700,
       };
 
-      const result = await service.updateBudget(1, updateDto);
+      const [budget] = await service.getAllBudgets();
+      const result = await service.updateBudget(budget.id, updateDto);
 
       expect(result).toEqual({
-        id: 1,
+        id: budget.id,
         amount: 700,
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       });
     });
 
@@ -202,7 +393,7 @@ describe('BudgetService', () => {
         amount: 700,
       };
 
-      const result = await service.updateBudget(999, updateDto);
+      const result = await service.updateBudget(missingBudgetId, updateDto);
 
       expect(result).toBeNull();
     });
@@ -212,25 +403,35 @@ describe('BudgetService', () => {
         month: 13,
       };
 
-      await expect(service.updateBudget(1, updateDto)).rejects.toThrow(
+      const [budget] = await service.getAllBudgets();
+
+      await expect(service.updateBudget(budget.id, updateDto)).rejects.toThrow(
         BadRequestException,
       );
-      await expect(service.updateBudget(1, updateDto)).rejects.toThrow(
+      await expect(service.updateBudget(budget.id, updateDto)).rejects.toThrow(
         'Month must be between 1 and 12',
       );
     });
 
     it('should throw BadRequestException when updating to non-existent category', async () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue(null);
+      jest
+        .spyOn(categoriesService, 'getCategoryById')
+        .mockRejectedValue(
+          new NotFoundException(
+            `Category with ID ${otherCategoryId} not found`,
+          ),
+        );
 
       const updateDto: UpdateBudgetDto = {
         categoryId: otherCategoryId,
       };
 
-      await expect(service.updateBudget(1, updateDto)).rejects.toThrow(
+      const [budget] = await service.getAllBudgets();
+
+      await expect(service.updateBudget(budget.id, updateDto)).rejects.toThrow(
         BadRequestException,
       );
-      await expect(service.updateBudget(1, updateDto)).rejects.toThrow(
+      await expect(service.updateBudget(budget.id, updateDto)).rejects.toThrow(
         `Category with ID ${otherCategoryId} does not exist`,
       );
     });
@@ -242,52 +443,60 @@ describe('BudgetService', () => {
         year: 2026,
       };
 
-      const result = await service.updateBudget(1, updateDto);
+      const [budget] = await service.getAllBudgets();
+      const result = await service.updateBudget(budget.id, updateDto);
 
       expect(result).toEqual({
-        id: 1,
+        id: budget.id,
         amount: 800,
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       });
     });
 
     it('should throw BadRequestException when updating creates duplicate', async () => {
       // Create second budget
       jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
-        id: otherCategoryId,
-        name: 'Entertainment',
-        type: 'expense',
-      } as any);
+        ...buildCategory(otherCategoryId, 'Entertainment'),
+      });
 
       const createDto2: CreateBudgetDto = {
         amount: 300,
         categoryId: otherCategoryId,
         month: 2,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
       await service.createBudget(createDto2);
 
       // Try to update second budget to conflict with first
       jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
-        id: categoryId,
-        name: 'Groceries',
-        type: 'expense',
-      } as any);
+        ...buildCategory(categoryId, 'Groceries'),
+      });
 
       const updateDto: UpdateBudgetDto = {
         categoryId,
         month: 1,
       };
 
-      await expect(service.updateBudget(2, updateDto)).rejects.toThrow(
-        BadRequestException,
+      const budgets = await service.getAllBudgets();
+      const secondBudget = budgets.find(
+        (budget) => budget.categoryId === otherCategoryId,
       );
-      await expect(service.updateBudget(2, updateDto)).rejects.toThrow(
-        `Budget for category ${categoryId}, type expense, month 1, and year 2026 already exists`,
+
+      if (!secondBudget) {
+        throw new Error('Expected second budget to exist');
+      }
+
+      await expect(
+        service.updateBudget(secondBudget.id, updateDto),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.updateBudget(secondBudget.id, updateDto),
+      ).rejects.toThrow(
+        `Budget for category ${categoryId}, type ${BudgetType.EXPENSE}, month 1, and year 2026 already exists`,
       );
     });
   });
@@ -299,63 +508,63 @@ describe('BudgetService', () => {
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
       await service.createBudget(createDto);
 
-      // Mock transactions
-      jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
+      prismaMock.__setTransactions([
         {
-          id: 1,
+          id: 't1',
           amount: 100,
           categoryId,
-          type: 'expense',
-          date: '2026-01-15',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
         },
         {
-          id: 2,
+          id: 't2',
           amount: 150,
           categoryId,
-          type: 'expense',
-          date: '2026-01-20',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-20T00:00:00.000Z'),
           description: 'Transaction 2',
         },
         {
-          id: 3,
+          id: 't3',
           amount: 200,
           categoryId,
-          type: 'expense',
-          date: '2026-02-10',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-02-10T00:00:00.000Z'),
           description: 'Different month',
         },
         {
-          id: 4,
+          id: 't4',
           amount: 75,
           categoryId: otherCategoryId,
-          type: 'expense',
-          date: '2026-01-10',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-10T00:00:00.000Z'),
           description: 'Different category',
         },
-      ] as any);
+      ]);
     });
 
-    it('should calculate spent amount for budget', () => {
-      const spent = service.getSpentAmount(1);
+    it('should calculate spent amount for budget', async () => {
+      const [budget] = await service.getAllBudgets();
+      const spent = await service.getSpentAmount(budget.id);
 
       expect(spent).toBe(250);
     });
 
-    it('should return 0 when budget does not exist', () => {
-      const spent = service.getSpentAmount(999);
+    it('should return 0 when budget does not exist', async () => {
+      const spent = await service.getSpentAmount(missingBudgetId);
 
       expect(spent).toBe(0);
     });
 
-    it('should return 0 when no transactions match', () => {
-      jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([]);
-
-      const spent = service.getSpentAmount(1);
+    it('should return 0 when no transactions match', async () => {
+      prismaMock.__setTransactions([]);
+      const [budget] = await service.getAllBudgets();
+      const spent = await service.getSpentAmount(budget.id);
 
       expect(spent).toBe(0);
     });
@@ -363,21 +572,19 @@ describe('BudgetService', () => {
     it('should filter transactions by categoryId, type, month, and year', async () => {
       // Create budget for different category
       jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
-        id: otherCategoryId,
-        name: 'Entertainment',
-        type: 'expense',
-      } as any);
+        ...buildCategory(otherCategoryId, 'Entertainment'),
+      });
 
       const createDto2: CreateBudgetDto = {
         amount: 300,
         categoryId: otherCategoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
       const budget2 = await service.createBudget(createDto2);
 
-      const spent = service.getSpentAmount(budget2.id);
+      const spent = await service.getSpentAmount(budget2.id);
 
       expect(spent).toBe(75);
     });
@@ -390,47 +597,49 @@ describe('BudgetService', () => {
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
       await service.createBudget(createDto);
 
-      jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
+      prismaMock.__setTransactions([
         {
-          id: 1,
+          id: 't1',
           amount: 200,
           categoryId,
-          type: 'expense',
-          date: '2026-01-15',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
         },
-      ] as any);
+      ]);
     });
 
-    it('should calculate remaining budget', () => {
-      const remaining = service.getRemainingBudget(1);
+    it('should calculate remaining budget', async () => {
+      const [budget] = await service.getAllBudgets();
+      const remaining = await service.getRemainingBudget(budget.id);
 
       expect(remaining).toBe(300);
     });
 
-    it('should return negative value when overspent', () => {
-      jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
+    it('should return negative value when overspent', async () => {
+      prismaMock.__setTransactions([
         {
-          id: 1,
+          id: 't1',
           amount: 600,
           categoryId,
-          type: 'expense',
-          date: '2026-01-15',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
         },
-      ] as any);
+      ]);
 
-      const remaining = service.getRemainingBudget(1);
+      const [budget] = await service.getAllBudgets();
+      const remaining = await service.getRemainingBudget(budget.id);
 
       expect(remaining).toBe(-100);
     });
 
-    it('should return 0 when budget does not exist', () => {
-      const remaining = service.getRemainingBudget(999);
+    it('should return 0 when budget does not exist', async () => {
+      const remaining = await service.getRemainingBudget(missingBudgetId);
 
       expect(remaining).toBe(0);
     });
@@ -443,24 +652,29 @@ describe('BudgetService', () => {
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
       await service.createBudget(createDto);
     });
 
-    it('should calculate utilization percentage', () => {
-      jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
+    it('should calculate utilization percentage', async () => {
+      prismaMock.__setTransactions([
         {
-          id: 1,
+          id: 't1',
           amount: 250,
           categoryId,
-          type: 'expense',
-          date: '2026-01-15',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
         },
-      ] as any);
+      ]);
 
-      const result = service.getBudgetWithSpending(1);
+      const [budget] = await service.getAllBudgets();
+      const result = await service.getBudgetWithSpending(budget.id);
+
+      if (!result) {
+        throw new Error('Expected budget with spending to be defined');
+      }
 
       expect(result.utilizationPercentage).toBe(50);
       expect(result.spent).toBe(250);
@@ -473,45 +687,54 @@ describe('BudgetService', () => {
         categoryId,
         month: 2,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
       const budget = await service.createBudget(createDto);
 
-      jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
+      prismaMock.__setTransactions([
         {
-          id: 1,
+          id: 't1',
           amount: 100,
           categoryId,
-          type: 'expense',
-          date: '2026-02-15',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-02-15T00:00:00.000Z'),
           description: 'Transaction 1',
         },
-      ] as any);
+      ]);
 
-      const result = service.getBudgetWithSpending(budget.id);
+      const result = await service.getBudgetWithSpending(budget.id);
+
+      if (!result) {
+        throw new Error('Expected budget with spending to be defined');
+      }
 
       expect(result.utilizationPercentage).toBe(0);
     });
 
-    it('should return percentage over 100 when overspent', () => {
-      jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
+    it('should return percentage over 100 when overspent', async () => {
+      prismaMock.__setTransactions([
         {
-          id: 1,
+          id: 't1',
           amount: 750,
           categoryId,
-          type: 'expense',
-          date: '2026-01-15',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
         },
-      ] as any);
+      ]);
 
-      const result = service.getBudgetWithSpending(1);
+      const [budget] = await service.getAllBudgets();
+      const result = await service.getBudgetWithSpending(budget.id);
+
+      if (!result) {
+        throw new Error('Expected budget with spending to be defined');
+      }
 
       expect(result.utilizationPercentage).toBe(150);
     });
 
-    it('should return null when budget does not exist', () => {
-      const result = service.getBudgetWithSpending(999);
+    it('should return null when budget does not exist', async () => {
+      const result = await service.getBudgetWithSpending(missingBudgetId);
 
       expect(result).toBeNull();
     });
@@ -524,39 +747,47 @@ describe('BudgetService', () => {
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
       await service.createBudget(createDto);
     });
 
     it('should return budget with category', async () => {
-      const result = await service.getBudgetWithCategory(1);
+      const [budget] = await service.getAllBudgets();
+      const result = await service.getBudgetWithCategory(budget.id);
 
       expect(result).toEqual({
-        id: 1,
+        id: budget.id,
         amount: 500,
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
         category: {
           id: categoryId,
           name: 'Groceries',
           type: 'expense',
+          createdAt: new Date('2025-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2025-01-01T00:00:00.000Z'),
         },
       });
     });
 
     it('should return null when budget does not exist', async () => {
-      const result = await service.getBudgetWithCategory(999);
+      const result = await service.getBudgetWithCategory(missingBudgetId);
 
       expect(result).toBeNull();
     });
 
     it('should handle null category', async () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue(null);
+      jest
+        .spyOn(categoriesService, 'getCategoryById')
+        .mockRejectedValue(
+          new NotFoundException(`Category with ID ${categoryId} not found`),
+        );
 
-      const result = await service.getBudgetWithCategory(1);
+      const [budget] = await service.getAllBudgets();
+      const result = await service.getBudgetWithCategory(budget.id);
 
       expect(result.category).toBeNull();
     });
@@ -569,60 +800,63 @@ describe('BudgetService', () => {
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
       };
       await service.createBudget(createDto);
 
-      jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
+      prismaMock.__setTransactions([
         {
-          id: 1,
+          id: 't1',
           amount: 150,
           categoryId,
-          type: 'expense',
-          date: '2026-01-10',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-10T00:00:00.000Z'),
           description: 'Transaction 1',
         },
         {
-          id: 2,
+          id: 't2',
           amount: 100,
           categoryId,
-          type: 'expense',
-          date: '2026-01-20',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-20T00:00:00.000Z'),
           description: 'Transaction 2',
         },
-      ] as any);
+      ]);
     });
 
     it('should return budget with category, transactions, and calculations', async () => {
-      const result = await service.getBudgetsWithTransactions(1);
+      const [budget] = await service.getAllBudgets();
+      const result = await service.getBudgetsWithTransactions(budget.id);
 
       expect(result).toEqual({
-        id: 1,
+        id: budget.id,
         amount: 500,
         categoryId,
         month: 1,
         year: 2026,
-        type: 'expense',
+        type: BudgetType.EXPENSE,
         category: {
           id: categoryId,
           name: 'Groceries',
           type: 'expense',
+          createdAt: new Date('2025-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2025-01-01T00:00:00.000Z'),
         },
         transactions: [
           {
-            id: 1,
+            id: 't1',
             amount: 150,
             categoryId,
-            type: 'expense',
-            date: '2026-01-10',
+            type: TransactionType.EXPENSE,
+            date: '2026-01-10T00:00:00.000Z',
             description: 'Transaction 1',
           },
           {
-            id: 2,
+            id: 't2',
             amount: 100,
             categoryId,
-            type: 'expense',
-            date: '2026-01-20',
+            type: TransactionType.EXPENSE,
+            date: '2026-01-20T00:00:00.000Z',
             description: 'Transaction 2',
           },
         ],
@@ -633,24 +867,25 @@ describe('BudgetService', () => {
     });
 
     it('should return null when budget does not exist', async () => {
-      const result = await service.getBudgetsWithTransactions(999);
+      const result = await service.getBudgetsWithTransactions(missingBudgetId);
 
       expect(result).toBeNull();
     });
 
     it('should include empty transactions array when no matches', async () => {
-      jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
+      prismaMock.__setTransactions([
         {
-          id: 3,
+          id: 't3',
           amount: 200,
           categoryId: otherCategoryId,
-          type: 'expense',
-          date: '2026-01-15',
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Different category',
         },
-      ] as any);
+      ]);
 
-      const result = await service.getBudgetsWithTransactions(1);
+      const [budget] = await service.getAllBudgets();
+      const result = await service.getBudgetsWithTransactions(budget.id);
 
       expect(result?.transactions).toEqual([]);
       expect(result?.spent).toBe(0);
