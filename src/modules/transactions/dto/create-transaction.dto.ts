@@ -1,4 +1,4 @@
-import { IsNumber, IsString } from 'class-validator';
+import { IsDateString, IsNumber, IsString, IsUUID } from 'class-validator';
 
 export class CreateTransactionDto {
   @IsNumber()
@@ -7,10 +7,10 @@ export class CreateTransactionDto {
   @IsString()
   type: string;
 
-  @IsString()
+  @IsUUID()
   categoryId: string;
 
-  @IsString()
+  @IsDateString()
   date: string;
 
   @IsString()

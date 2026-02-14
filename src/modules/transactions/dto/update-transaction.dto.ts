@@ -1,9 +1,12 @@
-import { IsNumber, IsString, IsOptional } from 'class-validator';
+import {
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class UpdateTransactionDto {
-  @IsOptional()
-  @IsNumber()
-  id?: number;
   @IsOptional()
   @IsNumber()
   amount?: number;
@@ -13,11 +16,11 @@ export class UpdateTransactionDto {
   type?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   categoryId?: string;
 
   @IsOptional()
-  @IsString()
+  @IsDateString()
   date?: string;
 
   @IsOptional()
