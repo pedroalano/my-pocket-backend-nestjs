@@ -3,29 +3,70 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { TransactionType } from '@prisma/client';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CategoriesService } from '../categories/categories.service';
+import { PrismaService } from '../shared/prisma.service';
 
 @Injectable()
 export class TransactionsService {
-  private transactions: {
-    id: number;
-    amount: number;
-    type: string;
-    categoryId: string;
-    date: string;
-    description: string;
-  }[] = [];
+  constructor(
+    private categoriesService: CategoriesService,
+    private prisma: PrismaService,
+  ) {}
 
-  constructor(private categoriesService: CategoriesService) {}
-
-  getAllTransactions() {
-    return this.transactions;
+  private normalizeTransactionType(type: string): TransactionType {
+    const normalized = type?.toUpperCase();
+    if (normalized === TransactionType.INCOME) {
+      return TransactionType.INCOME;
+    }
+    if (normalized === TransactionType.EXPENSE) {
+      return TransactionType.EXPENSE;
+    }
+    throw new BadRequestException(`Invalid transaction type: ${type}`);
   }
 
-  getTransactionById(id: number) {
-    return this.transactions.find((transaction) => transaction.id === id);
+  private mapTransaction(transaction: {
+    id: string;
+    amount: any;
+    type: TransactionType;
+    categoryId: string;
+    date: Date;
+    description: string | null;
+  }) {
+    return {
+      ...transaction,
+      amount: Number(transaction.amount),
+      date: transaction.date.toISOString(),
+    };
+  }
+
+  private readonly transactionSelect = {
+    id: true,
+    amount: true,
+    type: true,
+    categoryId: true,
+    date: true,
+    description: true,
+  };
+
+  async getAllTransactions() {
+    const transactions = await this.prisma.transaction.findMany({
+      select: this.transactionSelect,
+    });
+    return transactions.map((transaction) => this.mapTransaction(transaction));
+  }
+
+  async getTransactionById(id: string) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { id },
+      select: this.transactionSelect,
+    });
+    if (!transaction) {
+      return undefined;
+    }
+    return this.mapTransaction(transaction);
   }
 
   async createTransaction(createTransactionDto: CreateTransactionDto) {
@@ -48,16 +89,21 @@ export class TransactionsService {
       );
     }
 
-    const newTransaction = {
-      id: this.transactions.length + 1,
-      ...createTransactionDto,
-    };
-    this.transactions.push(newTransaction);
-    return newTransaction;
+    const newTransaction = await this.prisma.transaction.create({
+      data: {
+        amount: createTransactionDto.amount,
+        type: this.normalizeTransactionType(createTransactionDto.type),
+        categoryId: createTransactionDto.categoryId,
+        date: new Date(createTransactionDto.date),
+        description: createTransactionDto.description,
+      },
+      select: this.transactionSelect,
+    });
+    return this.mapTransaction(newTransaction);
   }
 
   async updateTransaction(
-    id: number,
+    id: string,
     updateTransactionDto: UpdateTransactionDto,
   ) {
     // Validate category existence if categoryId is being updated
@@ -81,27 +127,51 @@ export class TransactionsService {
       }
     }
 
-    const transactionIndex = this.transactions.findIndex(
-      (transaction) => transaction.id === id,
-    );
-    if (transactionIndex > -1) {
-      this.transactions[transactionIndex] = {
-        ...this.transactions[transactionIndex],
-        ...updateTransactionDto,
-      };
-      return this.transactions[transactionIndex];
+    const existingTransaction = await this.prisma.transaction.findUnique({
+      where: { id },
+      select: this.transactionSelect,
+    });
+
+    if (!existingTransaction) {
+      return null;
     }
-    return null;
+
+    const updatedTransaction = await this.prisma.transaction.update({
+      where: { id },
+      data: {
+        amount: updateTransactionDto.amount,
+        type:
+          updateTransactionDto.type !== undefined
+            ? this.normalizeTransactionType(updateTransactionDto.type)
+            : undefined,
+        categoryId: updateTransactionDto.categoryId,
+        date:
+          updateTransactionDto.date !== undefined
+            ? new Date(updateTransactionDto.date)
+            : undefined,
+        description: updateTransactionDto.description,
+      },
+      select: this.transactionSelect,
+    });
+
+    return this.mapTransaction(updatedTransaction);
   }
 
-  deleteTransaction(id: number) {
-    const transactionIndex = this.transactions.findIndex(
-      (transaction) => transaction.id === id,
-    );
-    if (transactionIndex > -1) {
-      const deletedTransaction = this.transactions.splice(transactionIndex, 1);
-      return deletedTransaction[0];
+  async deleteTransaction(id: string) {
+    const existingTransaction = await this.prisma.transaction.findUnique({
+      where: { id },
+      select: this.transactionSelect,
+    });
+
+    if (!existingTransaction) {
+      return null;
     }
-    return null;
+
+    const deletedTransaction = await this.prisma.transaction.delete({
+      where: { id },
+      select: this.transactionSelect,
+    });
+
+    return this.mapTransaction(deletedTransaction);
   }
 }
