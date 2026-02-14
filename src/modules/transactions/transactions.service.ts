@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CategoriesService } from '../categories/categories.service';
@@ -9,7 +13,7 @@ export class TransactionsService {
     id: number;
     amount: number;
     type: string;
-    categoryId: number;
+    categoryId: string;
     date: string;
     description: string;
   }[] = [];
@@ -24,11 +28,20 @@ export class TransactionsService {
     return this.transactions.find((transaction) => transaction.id === id);
   }
 
-  createTransaction(createTransactionDto: CreateTransactionDto) {
+  async createTransaction(createTransactionDto: CreateTransactionDto) {
     // Validate category existence
-    const category = this.categoriesService.getCategoryById(
-      createTransactionDto.categoryId,
-    );
+    let category = null;
+
+    try {
+      category = await this.categoriesService.getCategoryById(
+        createTransactionDto.categoryId,
+      );
+    } catch (error) {
+      if (!(error instanceof NotFoundException)) {
+        throw error;
+      }
+    }
+
     if (!category) {
       throw new BadRequestException(
         `Category with ID ${createTransactionDto.categoryId} does not exist`,
@@ -43,12 +56,24 @@ export class TransactionsService {
     return newTransaction;
   }
 
-  updateTransaction(id: number, updateTransactionDto: UpdateTransactionDto) {
+  async updateTransaction(
+    id: number,
+    updateTransactionDto: UpdateTransactionDto,
+  ) {
     // Validate category existence if categoryId is being updated
     if (updateTransactionDto.categoryId !== undefined) {
-      const category = this.categoriesService.getCategoryById(
-        updateTransactionDto.categoryId,
-      );
+      let category = null;
+
+      try {
+        category = await this.categoriesService.getCategoryById(
+          updateTransactionDto.categoryId,
+        );
+      } catch (error) {
+        if (!(error instanceof NotFoundException)) {
+          throw error;
+        }
+      }
+
       if (!category) {
         throw new BadRequestException(
           `Category with ID ${updateTransactionDto.categoryId} does not exist`,

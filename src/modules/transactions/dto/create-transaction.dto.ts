@@ -7,8 +7,8 @@ export class CreateTransactionDto {
   @IsString()
   type: string;
 
-  @IsNumber()
-  categoryId: number;
+  @IsString()
+  categoryId: string;
 
   @IsString()
   date: string;

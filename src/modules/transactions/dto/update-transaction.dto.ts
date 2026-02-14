@@ -13,8 +13,8 @@ export class UpdateTransactionDto {
   type?: string;
 
   @IsOptional()
-  @IsNumber()
-  categoryId?: number;
+  @IsString()
+  categoryId?: string;
 
   @IsOptional()
   @IsString()
