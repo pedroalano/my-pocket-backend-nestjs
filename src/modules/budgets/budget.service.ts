@@ -3,18 +3,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { BudgetType, Prisma, TransactionType } from '@prisma/client';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { CategoriesService } from '../categories/categories.service';
-import { TransactionsService } from '../transactions/transactions.service';
+import { PrismaService } from '../shared/prisma.service';
 
 type BudgetWithSpending = {
-  id: number;
+  id: string;
   amount: number;
   categoryId: string;
   month: number;
   year: number;
-  type: string;
+  type: BudgetType;
   spent: number;
   remaining: number;
   utilizationPercentage: number;
@@ -22,31 +23,133 @@ type BudgetWithSpending = {
 
 @Injectable()
 export class BudgetService {
-  private budgets: {
-    id: number;
-    amount: number;
+  constructor(
+    private categoriesService: CategoriesService,
+    private prisma: PrismaService,
+  ) {}
+
+  private readonly budgetSelect = {
+    id: true,
+    amount: true,
+    categoryId: true,
+    month: true,
+    year: true,
+    type: true,
+  };
+
+  private readonly transactionSelect = {
+    id: true,
+    amount: true,
+    categoryId: true,
+    type: true,
+    date: true,
+    description: true,
+  };
+
+  private normalizeBudgetType(type: string): BudgetType {
+    const normalized = type?.toUpperCase();
+
+    if (normalized === BudgetType.EXPENSE) {
+      return BudgetType.EXPENSE;
+    }
+
+    if (normalized === BudgetType.SAVINGS) {
+      return BudgetType.SAVINGS;
+    }
+
+    throw new BadRequestException(`Invalid budget type: ${type}`);
+  }
+
+  private mapBudget(budget: {
+    id: string;
+    amount: any;
     categoryId: string;
     month: number;
     year: number;
-    type: string;
-  }[] = [];
-
-  constructor(
-    private categoriesService: CategoriesService,
-    private transactionsService: TransactionsService,
-  ) {}
-
-  getAllBudgets() {
-    return this.budgets;
+    type: BudgetType;
+  }) {
+    return {
+      ...budget,
+      amount: Number(budget.amount),
+    };
   }
 
-  getBudgetById(id: number) {
-    return this.budgets.find((budget) => budget.id === id);
+  private mapTransaction(transaction: {
+    id: string;
+    amount: any;
+    categoryId: string;
+    type: TransactionType;
+    date: Date;
+    description: string | null;
+  }) {
+    return {
+      ...transaction,
+      amount: Number(transaction.amount),
+      date: transaction.date.toISOString(),
+    };
+  }
+
+  private getMonthRange(month: number, year: number) {
+    const start = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+    const end = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0));
+    return { start, end };
+  }
+
+  private getTransactionTypeForBudget(type: BudgetType): TransactionType {
+    if (type === BudgetType.EXPENSE) {
+      return TransactionType.EXPENSE;
+    }
+
+    return TransactionType.INCOME;
+  }
+
+  private async calculateSpentAmount(budget: {
+    categoryId: string;
+    month: number;
+    year: number;
+    type: BudgetType;
+  }) {
+    const { start, end } = this.getMonthRange(budget.month, budget.year);
+    const transactionType = this.getTransactionTypeForBudget(budget.type);
+    const spent = await this.prisma.transaction.aggregate({
+      where: {
+        categoryId: budget.categoryId,
+        type: transactionType,
+        date: {
+          gte: start,
+          lt: end,
+        },
+      },
+      _sum: {
+        amount: true,
+      },
+    });
+
+    return Number(spent._sum.amount ?? 0);
+  }
+
+  async getAllBudgets() {
+    const budgets = await this.prisma.budget.findMany({
+      select: this.budgetSelect,
+    });
+    return budgets.map((budget) => this.mapBudget(budget));
+  }
+
+  async getBudgetById(id: string) {
+    const budget = await this.prisma.budget.findUnique({
+      where: { id },
+      select: this.budgetSelect,
+    });
+
+    if (!budget) {
+      return undefined;
+    }
+
+    return this.mapBudget(budget);
   }
 
   async createBudget(budgetData: CreateBudgetDto) {
     this.validateBudgetData(budgetData);
-    this.checkDuplicateBudget(budgetData);
 
     let category = null;
 
@@ -65,15 +168,32 @@ export class BudgetService {
       );
     }
 
-    const newBudget = {
-      id: this.budgets.length + 1,
-      ...budgetData,
-    };
-    this.budgets.push(newBudget);
-    return newBudget;
+    try {
+      const newBudget = await this.prisma.budget.create({
+        data: {
+          amount: budgetData.amount,
+          categoryId: budgetData.categoryId,
+          month: budgetData.month,
+          year: budgetData.year,
+          type: this.normalizeBudgetType(budgetData.type),
+        },
+        select: this.budgetSelect,
+      });
+      return this.mapBudget(newBudget);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new BadRequestException(
+          `Budget for category ${budgetData.categoryId}, type ${budgetData.type}, month ${budgetData.month}, and year ${budgetData.year} already exists`,
+        );
+      }
+      throw error;
+    }
   }
 
-  async updateBudget(id: number, budgetData: UpdateBudgetDto) {
+  async updateBudget(id: string, budgetData: UpdateBudgetDto) {
     if (
       budgetData.month !== undefined ||
       budgetData.year !== undefined ||
@@ -100,25 +220,67 @@ export class BudgetService {
         );
       }
     }
-    const budgetIndex = this.budgets.findIndex((budget) => budget.id === id);
-    if (budgetIndex > -1) {
-      this.budgets[budgetIndex] = {
-        ...this.budgets[budgetIndex],
-        ...budgetData,
-      };
-      this.checkDuplicateBudget(this.budgets[budgetIndex], id);
-      return this.budgets[budgetIndex];
+
+    const existingBudget = await this.prisma.budget.findUnique({
+      where: { id },
+      select: this.budgetSelect,
+    });
+
+    if (!existingBudget) {
+      return null;
     }
-    return null;
+
+    try {
+      const updatedBudget = await this.prisma.budget.update({
+        where: { id },
+        data: {
+          amount: budgetData.amount,
+          categoryId: budgetData.categoryId,
+          month: budgetData.month,
+          year: budgetData.year,
+          type:
+            budgetData.type !== undefined
+              ? this.normalizeBudgetType(budgetData.type)
+              : undefined,
+        },
+        select: this.budgetSelect,
+      });
+      return this.mapBudget(updatedBudget);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const payload = {
+          categoryId: budgetData.categoryId ?? existingBudget.categoryId,
+          type: budgetData.type ?? existingBudget.type,
+          month: budgetData.month ?? existingBudget.month,
+          year: budgetData.year ?? existingBudget.year,
+        };
+        throw new BadRequestException(
+          `Budget for category ${payload.categoryId}, type ${payload.type}, month ${payload.month}, and year ${payload.year} already exists`,
+        );
+      }
+      throw error;
+    }
   }
 
-  deleteBudget(id: number) {
-    const budgetIndex = this.budgets.findIndex((budget) => budget.id === id);
-    if (budgetIndex > -1) {
-      const deletedBudget = this.budgets.splice(budgetIndex, 1);
-      return deletedBudget[0];
+  async deleteBudget(id: string) {
+    const existingBudget = await this.prisma.budget.findUnique({
+      where: { id },
+      select: this.budgetSelect,
+    });
+
+    if (!existingBudget) {
+      return null;
     }
-    return null;
+
+    const deletedBudget = await this.prisma.budget.delete({
+      where: { id },
+      select: this.budgetSelect,
+    });
+
+    return this.mapBudget(deletedBudget);
   }
 
   private validateBudgetData(budgetData: CreateBudgetDto): void {
@@ -136,76 +298,35 @@ export class BudgetService {
     }
   }
 
-  private checkDuplicateBudget(
-    budgetData: CreateBudgetDto,
-    excludeId?: number,
-  ): void {
-    const isDuplicate = this.budgets.some(
-      (budget) =>
-        budget.categoryId === budgetData.categoryId &&
-        budget.type === budgetData.type &&
-        budget.month === budgetData.month &&
-        budget.year === budgetData.year &&
-        budget.id !== excludeId,
-    );
-
-    if (isDuplicate) {
-      throw new BadRequestException(
-        `Budget for category ${budgetData.categoryId}, type ${budgetData.type}, month ${budgetData.month}, and year ${budgetData.year} already exists`,
-      );
-    }
-  }
-
-  getSpentAmount(budgetId: number): number {
-    const budget = this.getBudgetById(budgetId);
+  async getSpentAmount(budgetId: string): Promise<number> {
+    const budget = await this.getBudgetById(budgetId);
     if (!budget) {
       return 0;
     }
 
-    const transactions = this.transactionsService.getAllTransactions();
-    const spent = transactions
-      .filter((transaction) => {
-        // Match category and type
-        if (
-          transaction.categoryId !== budget.categoryId ||
-          transaction.type !== budget.type
-        ) {
-          return false;
-        }
-
-        // Extract month and year from transaction date (ISO format: YYYY-MM-DD)
-        const transactionDate = new Date(transaction.date);
-        const transactionMonth = transactionDate.getMonth() + 1;
-        const transactionYear = transactionDate.getFullYear();
-
-        // Check if transaction is within budget period
-        return (
-          transactionMonth === budget.month && transactionYear === budget.year
-        );
-      })
-      .reduce((sum, transaction) => sum + transaction.amount, 0);
-
-    return spent;
+    return this.calculateSpentAmount(budget);
   }
 
-  getRemainingBudget(budgetId: number): number {
-    const budget = this.getBudgetById(budgetId);
+  async getRemainingBudget(budgetId: string): Promise<number> {
+    const budget = await this.getBudgetById(budgetId);
     if (!budget) {
       return 0;
     }
 
-    const spent = this.getSpentAmount(budgetId);
+    const spent = await this.calculateSpentAmount(budget);
     return budget.amount - spent;
   }
 
-  getBudgetWithSpending(budgetId: number): any {
-    const budget = this.getBudgetById(budgetId);
+  async getBudgetWithSpending(
+    budgetId: string,
+  ): Promise<BudgetWithSpending | null> {
+    const budget = await this.getBudgetById(budgetId);
     if (!budget) {
       return null;
     }
 
-    const spent = this.getSpentAmount(budgetId);
-    const remaining = this.getRemainingBudget(budgetId);
+    const spent = await this.calculateSpentAmount(budget);
+    const remaining = budget.amount - spent;
     const utilizationPercentage =
       budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
 
@@ -217,36 +338,31 @@ export class BudgetService {
     };
   }
 
-  getTransactionsForBudget(budgetId: number): any[] {
-    const budget = this.getBudgetById(budgetId);
+  async getTransactionsForBudget(budgetId: string) {
+    const budget = await this.getBudgetById(budgetId);
     if (!budget) {
       return [];
     }
 
-    const transactions = this.transactionsService.getAllTransactions();
-    return transactions.filter((transaction) => {
-      // Match category and type
-      if (
-        transaction.categoryId !== budget.categoryId ||
-        transaction.type !== budget.type
-      ) {
-        return false;
-      }
-
-      // Extract month and year from transaction date (ISO format: YYYY-MM-DD)
-      const transactionDate = new Date(transaction.date);
-      const transactionMonth = transactionDate.getMonth() + 1;
-      const transactionYear = transactionDate.getFullYear();
-
-      // Check if transaction is within budget period
-      return (
-        transactionMonth === budget.month && transactionYear === budget.year
-      );
+    const { start, end } = this.getMonthRange(budget.month, budget.year);
+    const transactionType = this.getTransactionTypeForBudget(budget.type);
+    const transactions = await this.prisma.transaction.findMany({
+      where: {
+        categoryId: budget.categoryId,
+        type: transactionType,
+        date: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: this.transactionSelect,
     });
+
+    return transactions.map((transaction) => this.mapTransaction(transaction));
   }
 
-  async getBudgetWithCategory(budgetId: number): Promise<any> {
-    const budget = this.getBudgetById(budgetId);
+  async getBudgetWithCategory(budgetId: string): Promise<any> {
+    const budget = await this.getBudgetById(budgetId);
     if (!budget) {
       return null;
     }
@@ -269,8 +385,8 @@ export class BudgetService {
     };
   }
 
-  async getBudgetsWithTransactions(budgetId: number): Promise<any> {
-    const budget = this.getBudgetById(budgetId);
+  async getBudgetsWithTransactions(budgetId: string): Promise<any> {
+    const budget = await this.getBudgetById(budgetId);
     if (!budget) {
       return null;
     }
@@ -286,9 +402,12 @@ export class BudgetService {
         throw error;
       }
     }
-    const transactions = this.getTransactionsForBudget(budgetId);
-    const spent = this.getSpentAmount(budgetId);
-    const remaining = this.getRemainingBudget(budgetId);
+
+    const [transactions, spent] = await Promise.all([
+      this.getTransactionsForBudget(budgetId),
+      this.calculateSpentAmount(budget),
+    ]);
+    const remaining = budget.amount - spent;
     const utilizationPercentage =
       budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
 
@@ -302,21 +421,31 @@ export class BudgetService {
     };
   }
 
-  getBudgetsByCategory(categoryId: string): BudgetWithSpending[] {
-    return this.budgets
-      .filter((budget) => budget.categoryId === categoryId)
-      .map((budget) => {
-        const spent = this.getSpentAmount(budget.id);
-        const remaining = budget.amount - spent;
+  async getBudgetsByCategory(
+    categoryId: string,
+  ): Promise<BudgetWithSpending[]> {
+    const budgets = await this.prisma.budget.findMany({
+      where: { categoryId },
+      select: this.budgetSelect,
+    });
+
+    const results = await Promise.all(
+      budgets.map(async (budget) => {
+        const mapped = this.mapBudget(budget);
+        const spent = await this.calculateSpentAmount(mapped);
+        const remaining = mapped.amount - spent;
         const utilizationPercentage =
-          budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
+          mapped.amount > 0 ? (spent / mapped.amount) * 100 : 0;
 
         return {
-          ...budget,
+          ...mapped,
           spent,
           remaining,
           utilizationPercentage,
         };
-      });
+      }),
+    );
+
+    return results;
   }
 }

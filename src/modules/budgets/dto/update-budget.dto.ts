@@ -1,14 +1,24 @@
-import { IsNumber, IsString } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsUUID } from 'class-validator';
+import { BudgetType } from '@prisma/client';
 
 export class UpdateBudgetDto {
+  @IsOptional()
   @IsNumber()
   amount?: number;
-  @IsString()
+
+  @IsOptional()
+  @IsUUID()
   categoryId?: string;
+
+  @IsOptional()
   @IsNumber()
   month?: number;
+
+  @IsOptional()
   @IsNumber()
   year?: number;
-  @IsString()
-  type?: string;
+
+  @IsOptional()
+  @IsEnum(BudgetType)
+  type?: BudgetType;
 }
