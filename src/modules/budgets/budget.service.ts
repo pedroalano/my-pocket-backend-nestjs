@@ -1,16 +1,31 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { CategoriesService } from '../categories/categories.service';
 import { TransactionsService } from '../transactions/transactions.service';
-import { BadRequestException } from '@nestjs/common';
+
+type BudgetWithSpending = {
+  id: number;
+  amount: number;
+  categoryId: string;
+  month: number;
+  year: number;
+  type: string;
+  spent: number;
+  remaining: number;
+  utilizationPercentage: number;
+};
 
 @Injectable()
 export class BudgetService {
   private budgets: {
     id: number;
     amount: number;
-    categoryId: number;
+    categoryId: string;
     month: number;
     year: number;
     type: string;
@@ -29,13 +44,21 @@ export class BudgetService {
     return this.budgets.find((budget) => budget.id === id);
   }
 
-  createBudget(budgetData: CreateBudgetDto) {
+  async createBudget(budgetData: CreateBudgetDto) {
     this.validateBudgetData(budgetData);
     this.checkDuplicateBudget(budgetData);
 
-    const category = this.categoriesService.getCategoryById(
-      budgetData.categoryId,
-    );
+    let category = null;
+
+    try {
+      category = await this.categoriesService.getCategoryById(
+        budgetData.categoryId,
+      );
+    } catch (error) {
+      if (!(error instanceof NotFoundException)) {
+        throw error;
+      }
+    }
     if (!category) {
       throw new BadRequestException(
         `Category with ID ${budgetData.categoryId} does not exist`,
@@ -50,7 +73,7 @@ export class BudgetService {
     return newBudget;
   }
 
-  updateBudget(id: number, budgetData: UpdateBudgetDto) {
+  async updateBudget(id: number, budgetData: UpdateBudgetDto) {
     if (
       budgetData.month !== undefined ||
       budgetData.year !== undefined ||
@@ -60,9 +83,17 @@ export class BudgetService {
     }
 
     if (budgetData.categoryId !== undefined) {
-      const category = this.categoriesService.getCategoryById(
-        budgetData.categoryId,
-      );
+      let category = null;
+
+      try {
+        category = await this.categoriesService.getCategoryById(
+          budgetData.categoryId,
+        );
+      } catch (error) {
+        if (!(error instanceof NotFoundException)) {
+          throw error;
+        }
+      }
       if (!category) {
         throw new BadRequestException(
           `Category with ID ${budgetData.categoryId} does not exist`,
@@ -214,13 +245,23 @@ export class BudgetService {
     });
   }
 
-  getBudgetWithCategory(budgetId: number): any {
+  async getBudgetWithCategory(budgetId: number): Promise<any> {
     const budget = this.getBudgetById(budgetId);
     if (!budget) {
       return null;
     }
 
-    const category = this.categoriesService.getCategoryById(budget.categoryId);
+    let category = null;
+
+    try {
+      category = await this.categoriesService.getCategoryById(
+        budget.categoryId,
+      );
+    } catch (error) {
+      if (!(error instanceof NotFoundException)) {
+        throw error;
+      }
+    }
 
     return {
       ...budget,
@@ -228,13 +269,23 @@ export class BudgetService {
     };
   }
 
-  getBudgetsWithTransactions(budgetId: number): any {
+  async getBudgetsWithTransactions(budgetId: number): Promise<any> {
     const budget = this.getBudgetById(budgetId);
     if (!budget) {
       return null;
     }
 
-    const category = this.categoriesService.getCategoryById(budget.categoryId);
+    let category = null;
+
+    try {
+      category = await this.categoriesService.getCategoryById(
+        budget.categoryId,
+      );
+    } catch (error) {
+      if (!(error instanceof NotFoundException)) {
+        throw error;
+      }
+    }
     const transactions = this.getTransactionsForBudget(budgetId);
     const spent = this.getSpentAmount(budgetId);
     const remaining = this.getRemainingBudget(budgetId);
@@ -251,7 +302,7 @@ export class BudgetService {
     };
   }
 
-  getBudgetsByCategory(categoryId: number): any[] {
+  getBudgetsByCategory(categoryId: string): BudgetWithSpending[] {
     return this.budgets
       .filter((budget) => budget.categoryId === categoryId)
       .map((budget) => {

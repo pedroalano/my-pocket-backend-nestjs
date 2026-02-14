@@ -31,8 +31,10 @@ export class BudgetController {
   }
 
   @Get('category/:categoryId')
-  getBudgetsByCategory(@Param('categoryId') categoryId: string) {
-    return this.budgetService.getBudgetsByCategory(+categoryId);
+  getBudgetsByCategory(
+    @Param('categoryId') categoryId: string,
+  ): ReturnType<BudgetService['getBudgetsByCategory']> {
+    return this.budgetService.getBudgetsByCategory(categoryId);
   }
 
   @Post()

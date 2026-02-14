@@ -10,6 +10,8 @@ describe('BudgetService', () => {
   let service: BudgetService;
   let categoriesService: CategoriesService;
   let transactionsService: TransactionsService;
+  const categoryId = '11111111-1111-1111-1111-111111111111';
+  const otherCategoryId = '22222222-2222-2222-2222-222222222222';
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -35,8 +37,8 @@ describe('BudgetService', () => {
     transactionsService = module.get<TransactionsService>(TransactionsService);
 
     // Default mock return values
-    jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-      id: 1,
+    jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+      id: categoryId,
       name: 'Groceries',
       type: 'expense',
     } as any);
@@ -48,100 +50,102 @@ describe('BudgetService', () => {
   });
 
   describe('createBudget', () => {
-    it('should create a new budget with valid data', () => {
+    it('should create a new budget with valid data', async () => {
       const createDto: CreateBudgetDto = {
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       };
 
-      const result = service.createBudget(createDto);
+      const result = await service.createBudget(createDto);
 
       expect(result).toEqual({
         id: 1,
         ...createDto,
       });
-      expect(categoriesService.getCategoryById).toHaveBeenCalledWith(1);
+      expect(categoriesService.getCategoryById).toHaveBeenCalledWith(
+        categoryId,
+      );
     });
 
-    it('should throw BadRequestException when month is less than 1', () => {
+    it('should throw BadRequestException when month is less than 1', async () => {
       const createDto: CreateBudgetDto = {
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 0,
         year: 2026,
         type: 'expense',
       };
 
-      expect(() => service.createBudget(createDto)).toThrow(
+      await expect(service.createBudget(createDto)).rejects.toThrow(
         BadRequestException,
       );
-      expect(() => service.createBudget(createDto)).toThrow(
+      await expect(service.createBudget(createDto)).rejects.toThrow(
         'Month must be between 1 and 12',
       );
     });
 
-    it('should throw BadRequestException when month is greater than 12', () => {
+    it('should throw BadRequestException when month is greater than 12', async () => {
       const createDto: CreateBudgetDto = {
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 13,
         year: 2026,
         type: 'expense',
       };
 
-      expect(() => service.createBudget(createDto)).toThrow(
+      await expect(service.createBudget(createDto)).rejects.toThrow(
         BadRequestException,
       );
-      expect(() => service.createBudget(createDto)).toThrow(
+      await expect(service.createBudget(createDto)).rejects.toThrow(
         'Month must be between 1 and 12',
       );
     });
 
-    it('should throw BadRequestException when category does not exist', () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue(null);
+    it('should throw BadRequestException when category does not exist', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue(null);
 
       const createDto: CreateBudgetDto = {
         amount: 500,
-        categoryId: 999,
+        categoryId: otherCategoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       };
 
-      expect(() => service.createBudget(createDto)).toThrow(
+      await expect(service.createBudget(createDto)).rejects.toThrow(
         BadRequestException,
       );
-      expect(() => service.createBudget(createDto)).toThrow(
-        'Category with ID 999 does not exist',
+      await expect(service.createBudget(createDto)).rejects.toThrow(
+        `Category with ID ${otherCategoryId} does not exist`,
       );
     });
 
-    it('should throw BadRequestException when duplicate budget exists', () => {
+    it('should throw BadRequestException when duplicate budget exists', async () => {
       const createDto: CreateBudgetDto = {
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       };
 
-      service.createBudget(createDto);
+      await service.createBudget(createDto);
 
-      expect(() => service.createBudget(createDto)).toThrow(
+      await expect(service.createBudget(createDto)).rejects.toThrow(
         BadRequestException,
       );
-      expect(() => service.createBudget(createDto)).toThrow(
-        'Budget for category 1, type expense, month 1, and year 2026 already exists',
+      await expect(service.createBudget(createDto)).rejects.toThrow(
+        `Budget for category ${categoryId}, type expense, month 1, and year 2026 already exists`,
       );
     });
 
-    it('should allow creating different budgets for different months', () => {
+    it('should allow creating different budgets for different months', async () => {
       const createDto1: CreateBudgetDto = {
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
@@ -149,14 +153,14 @@ describe('BudgetService', () => {
 
       const createDto2: CreateBudgetDto = {
         amount: 600,
-        categoryId: 1,
+        categoryId,
         month: 2,
         year: 2026,
         type: 'expense',
       };
 
-      const result1 = service.createBudget(createDto1);
-      const result2 = service.createBudget(createDto2);
+      const result1 = await service.createBudget(createDto1);
+      const result2 = await service.createBudget(createDto2);
 
       expect(result1.id).toBe(1);
       expect(result2.id).toBe(2);
@@ -165,146 +169,146 @@ describe('BudgetService', () => {
   });
 
   describe('updateBudget', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       const createDto: CreateBudgetDto = {
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       };
-      service.createBudget(createDto);
+      await service.createBudget(createDto);
     });
 
-    it('should update budget amount', () => {
+    it('should update budget amount', async () => {
       const updateDto: UpdateBudgetDto = {
         amount: 700,
       };
 
-      const result = service.updateBudget(1, updateDto);
+      const result = await service.updateBudget(1, updateDto);
 
       expect(result).toEqual({
         id: 1,
         amount: 700,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       });
     });
 
-    it('should return null when budget does not exist', () => {
+    it('should return null when budget does not exist', async () => {
       const updateDto: UpdateBudgetDto = {
         amount: 700,
       };
 
-      const result = service.updateBudget(999, updateDto);
+      const result = await service.updateBudget(999, updateDto);
 
       expect(result).toBeNull();
     });
 
-    it('should throw BadRequestException when updating to invalid month', () => {
+    it('should throw BadRequestException when updating to invalid month', async () => {
       const updateDto: UpdateBudgetDto = {
         month: 13,
       };
 
-      expect(() => service.updateBudget(1, updateDto)).toThrow(
+      await expect(service.updateBudget(1, updateDto)).rejects.toThrow(
         BadRequestException,
       );
-      expect(() => service.updateBudget(1, updateDto)).toThrow(
+      await expect(service.updateBudget(1, updateDto)).rejects.toThrow(
         'Month must be between 1 and 12',
       );
     });
 
-    it('should throw BadRequestException when updating to non-existent category', () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue(null);
+    it('should throw BadRequestException when updating to non-existent category', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue(null);
 
       const updateDto: UpdateBudgetDto = {
-        categoryId: 999,
+        categoryId: otherCategoryId,
       };
 
-      expect(() => service.updateBudget(1, updateDto)).toThrow(
+      await expect(service.updateBudget(1, updateDto)).rejects.toThrow(
         BadRequestException,
       );
-      expect(() => service.updateBudget(1, updateDto)).toThrow(
-        'Category with ID 999 does not exist',
+      await expect(service.updateBudget(1, updateDto)).rejects.toThrow(
+        `Category with ID ${otherCategoryId} does not exist`,
       );
     });
 
-    it('should allow budget to update itself without duplicate error', () => {
+    it('should allow budget to update itself without duplicate error', async () => {
       const updateDto: UpdateBudgetDto = {
         amount: 800,
         month: 1,
         year: 2026,
       };
 
-      const result = service.updateBudget(1, updateDto);
+      const result = await service.updateBudget(1, updateDto);
 
       expect(result).toEqual({
         id: 1,
         amount: 800,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       });
     });
 
-    it('should throw BadRequestException when updating creates duplicate', () => {
+    it('should throw BadRequestException when updating creates duplicate', async () => {
       // Create second budget
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-        id: 2,
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        id: otherCategoryId,
         name: 'Entertainment',
         type: 'expense',
       } as any);
 
       const createDto2: CreateBudgetDto = {
         amount: 300,
-        categoryId: 2,
+        categoryId: otherCategoryId,
         month: 2,
         year: 2026,
         type: 'expense',
       };
-      service.createBudget(createDto2);
+      await service.createBudget(createDto2);
 
       // Try to update second budget to conflict with first
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-        id: 1,
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        id: categoryId,
         name: 'Groceries',
         type: 'expense',
       } as any);
 
       const updateDto: UpdateBudgetDto = {
-        categoryId: 1,
+        categoryId,
         month: 1,
       };
 
-      expect(() => service.updateBudget(2, updateDto)).toThrow(
+      await expect(service.updateBudget(2, updateDto)).rejects.toThrow(
         BadRequestException,
       );
-      expect(() => service.updateBudget(2, updateDto)).toThrow(
-        'Budget for category 1, type expense, month 1, and year 2026 already exists',
+      await expect(service.updateBudget(2, updateDto)).rejects.toThrow(
+        `Budget for category ${categoryId}, type expense, month 1, and year 2026 already exists`,
       );
     });
   });
 
   describe('getSpentAmount', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       const createDto: CreateBudgetDto = {
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       };
-      service.createBudget(createDto);
+      await service.createBudget(createDto);
 
       // Mock transactions
       jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
         {
           id: 1,
           amount: 100,
-          categoryId: 1,
+          categoryId,
           type: 'expense',
           date: '2026-01-15',
           description: 'Transaction 1',
@@ -312,7 +316,7 @@ describe('BudgetService', () => {
         {
           id: 2,
           amount: 150,
-          categoryId: 1,
+          categoryId,
           type: 'expense',
           date: '2026-01-20',
           description: 'Transaction 2',
@@ -320,7 +324,7 @@ describe('BudgetService', () => {
         {
           id: 3,
           amount: 200,
-          categoryId: 1,
+          categoryId,
           type: 'expense',
           date: '2026-02-10',
           description: 'Different month',
@@ -328,7 +332,7 @@ describe('BudgetService', () => {
         {
           id: 4,
           amount: 75,
-          categoryId: 2,
+          categoryId: otherCategoryId,
           type: 'expense',
           date: '2026-01-10',
           description: 'Different category',
@@ -356,22 +360,22 @@ describe('BudgetService', () => {
       expect(spent).toBe(0);
     });
 
-    it('should filter transactions by categoryId, type, month, and year', () => {
+    it('should filter transactions by categoryId, type, month, and year', async () => {
       // Create budget for different category
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-        id: 2,
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        id: otherCategoryId,
         name: 'Entertainment',
         type: 'expense',
       } as any);
 
       const createDto2: CreateBudgetDto = {
         amount: 300,
-        categoryId: 2,
+        categoryId: otherCategoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       };
-      const budget2 = service.createBudget(createDto2);
+      const budget2 = await service.createBudget(createDto2);
 
       const spent = service.getSpentAmount(budget2.id);
 
@@ -380,21 +384,21 @@ describe('BudgetService', () => {
   });
 
   describe('getRemainingBudget', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       const createDto: CreateBudgetDto = {
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       };
-      service.createBudget(createDto);
+      await service.createBudget(createDto);
 
       jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
         {
           id: 1,
           amount: 200,
-          categoryId: 1,
+          categoryId,
           type: 'expense',
           date: '2026-01-15',
           description: 'Transaction 1',
@@ -413,7 +417,7 @@ describe('BudgetService', () => {
         {
           id: 1,
           amount: 600,
-          categoryId: 1,
+          categoryId,
           type: 'expense',
           date: '2026-01-15',
           description: 'Transaction 1',
@@ -433,15 +437,15 @@ describe('BudgetService', () => {
   });
 
   describe('getBudgetWithSpending', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       const createDto: CreateBudgetDto = {
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       };
-      service.createBudget(createDto);
+      await service.createBudget(createDto);
     });
 
     it('should calculate utilization percentage', () => {
@@ -449,7 +453,7 @@ describe('BudgetService', () => {
         {
           id: 1,
           amount: 250,
-          categoryId: 1,
+          categoryId,
           type: 'expense',
           date: '2026-01-15',
           description: 'Transaction 1',
@@ -463,21 +467,21 @@ describe('BudgetService', () => {
       expect(result.remaining).toBe(250);
     });
 
-    it('should return 0 utilization when amount is 0', () => {
+    it('should return 0 utilization when amount is 0', async () => {
       const createDto: CreateBudgetDto = {
         amount: 0,
-        categoryId: 1,
+        categoryId,
         month: 2,
         year: 2026,
         type: 'expense',
       };
-      const budget = service.createBudget(createDto);
+      const budget = await service.createBudget(createDto);
 
       jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
         {
           id: 1,
           amount: 100,
-          categoryId: 1,
+          categoryId,
           type: 'expense',
           date: '2026-02-15',
           description: 'Transaction 1',
@@ -494,7 +498,7 @@ describe('BudgetService', () => {
         {
           id: 1,
           amount: 750,
-          categoryId: 1,
+          categoryId,
           type: 'expense',
           date: '2026-01-15',
           description: 'Transaction 1',
@@ -514,66 +518,66 @@ describe('BudgetService', () => {
   });
 
   describe('getBudgetWithCategory', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       const createDto: CreateBudgetDto = {
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       };
-      service.createBudget(createDto);
+      await service.createBudget(createDto);
     });
 
-    it('should return budget with category', () => {
-      const result = service.getBudgetWithCategory(1);
+    it('should return budget with category', async () => {
+      const result = await service.getBudgetWithCategory(1);
 
       expect(result).toEqual({
         id: 1,
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
         category: {
-          id: 1,
+          id: categoryId,
           name: 'Groceries',
           type: 'expense',
         },
       });
     });
 
-    it('should return null when budget does not exist', () => {
-      const result = service.getBudgetWithCategory(999);
+    it('should return null when budget does not exist', async () => {
+      const result = await service.getBudgetWithCategory(999);
 
       expect(result).toBeNull();
     });
 
-    it('should handle null category', () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue(null);
+    it('should handle null category', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue(null);
 
-      const result = service.getBudgetWithCategory(1);
+      const result = await service.getBudgetWithCategory(1);
 
       expect(result.category).toBeNull();
     });
   });
 
   describe('getBudgetsWithTransactions', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       const createDto: CreateBudgetDto = {
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
       };
-      service.createBudget(createDto);
+      await service.createBudget(createDto);
 
       jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
         {
           id: 1,
           amount: 150,
-          categoryId: 1,
+          categoryId,
           type: 'expense',
           date: '2026-01-10',
           description: 'Transaction 1',
@@ -581,7 +585,7 @@ describe('BudgetService', () => {
         {
           id: 2,
           amount: 100,
-          categoryId: 1,
+          categoryId,
           type: 'expense',
           date: '2026-01-20',
           description: 'Transaction 2',
@@ -589,18 +593,18 @@ describe('BudgetService', () => {
       ] as any);
     });
 
-    it('should return budget with category, transactions, and calculations', () => {
-      const result = service.getBudgetsWithTransactions(1);
+    it('should return budget with category, transactions, and calculations', async () => {
+      const result = await service.getBudgetsWithTransactions(1);
 
       expect(result).toEqual({
         id: 1,
         amount: 500,
-        categoryId: 1,
+        categoryId,
         month: 1,
         year: 2026,
         type: 'expense',
         category: {
-          id: 1,
+          id: categoryId,
           name: 'Groceries',
           type: 'expense',
         },
@@ -608,7 +612,7 @@ describe('BudgetService', () => {
           {
             id: 1,
             amount: 150,
-            categoryId: 1,
+            categoryId,
             type: 'expense',
             date: '2026-01-10',
             description: 'Transaction 1',
@@ -616,7 +620,7 @@ describe('BudgetService', () => {
           {
             id: 2,
             amount: 100,
-            categoryId: 1,
+            categoryId,
             type: 'expense',
             date: '2026-01-20',
             description: 'Transaction 2',
@@ -628,25 +632,25 @@ describe('BudgetService', () => {
       });
     });
 
-    it('should return null when budget does not exist', () => {
-      const result = service.getBudgetsWithTransactions(999);
+    it('should return null when budget does not exist', async () => {
+      const result = await service.getBudgetsWithTransactions(999);
 
       expect(result).toBeNull();
     });
 
-    it('should include empty transactions array when no matches', () => {
+    it('should include empty transactions array when no matches', async () => {
       jest.spyOn(transactionsService, 'getAllTransactions').mockReturnValue([
         {
           id: 3,
           amount: 200,
-          categoryId: 2,
+          categoryId: otherCategoryId,
           type: 'expense',
           date: '2026-01-15',
           description: 'Different category',
         },
       ] as any);
 
-      const result = service.getBudgetsWithTransactions(1);
+      const result = await service.getBudgetsWithTransactions(1);
 
       expect(result?.transactions).toEqual([]);
       expect(result?.spent).toBe(0);

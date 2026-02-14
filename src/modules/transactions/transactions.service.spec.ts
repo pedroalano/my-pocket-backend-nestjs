@@ -8,6 +8,8 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
 describe('TransactionsService', () => {
   let service: TransactionsService;
   let categoriesService: CategoriesService;
+  const categoryId = '11111111-1111-1111-1111-111111111111';
+  const otherCategoryId = '22222222-2222-2222-2222-222222222222';
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -36,9 +38,9 @@ describe('TransactionsService', () => {
       expect(transactions).toEqual([]);
     });
 
-    it('should return all transactions after creating some', () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-        id: 1,
+    it('should return all transactions after creating some', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        id: categoryId,
         name: 'Salary',
         type: 'income',
       } as any);
@@ -46,13 +48,13 @@ describe('TransactionsService', () => {
       const createDto: CreateTransactionDto = {
         amount: 1000,
         type: 'income',
-        categoryId: 1,
+        categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
       };
 
-      service.createTransaction(createDto);
-      service.createTransaction(createDto);
+      await service.createTransaction(createDto);
+      await service.createTransaction(createDto);
 
       const transactions = service.getAllTransactions();
       expect(transactions.length).toBe(2);
@@ -65,9 +67,9 @@ describe('TransactionsService', () => {
       expect(transaction).toBeUndefined();
     });
 
-    it('should return the transaction if it exists', () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-        id: 1,
+    it('should return the transaction if it exists', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        id: categoryId,
         name: 'Salary',
         type: 'income',
       } as any);
@@ -75,12 +77,12 @@ describe('TransactionsService', () => {
       const createDto: CreateTransactionDto = {
         amount: 1000,
         type: 'income',
-        categoryId: 1,
+        categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
       };
 
-      service.createTransaction(createDto);
+      await service.createTransaction(createDto);
       const transaction = service.getTransactionById(1);
 
       expect(transaction).toBeDefined();
@@ -91,9 +93,9 @@ describe('TransactionsService', () => {
   });
 
   describe('createTransaction', () => {
-    it('should create a transaction with valid category', () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-        id: 1,
+    it('should create a transaction with valid category', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        id: categoryId,
         name: 'Salary',
         type: 'income',
       } as any);
@@ -101,25 +103,25 @@ describe('TransactionsService', () => {
       const createDto: CreateTransactionDto = {
         amount: 1000,
         type: 'income',
-        categoryId: 1,
+        categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
       };
 
-      const transaction = service.createTransaction(createDto);
+      const transaction = await service.createTransaction(createDto);
 
       expect(transaction).toBeDefined();
       expect(transaction.id).toBe(1);
       expect(transaction.amount).toBe(1000);
       expect(transaction.type).toBe('income');
-      expect(transaction.categoryId).toBe(1);
+      expect(transaction.categoryId).toBe(categoryId);
       expect(transaction.date).toBe('2025-01-01');
       expect(transaction.description).toBe('Monthly salary');
     });
 
-    it('should auto-increment transaction IDs', () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-        id: 1,
+    it('should auto-increment transaction IDs', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        id: categoryId,
         name: 'Salary',
         type: 'income',
       } as any);
@@ -127,40 +129,40 @@ describe('TransactionsService', () => {
       const createDto: CreateTransactionDto = {
         amount: 1000,
         type: 'income',
-        categoryId: 1,
+        categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
       };
 
-      const transaction1 = service.createTransaction(createDto);
-      const transaction2 = service.createTransaction(createDto);
+      const transaction1 = await service.createTransaction(createDto);
+      const transaction2 = await service.createTransaction(createDto);
 
       expect(transaction1.id).toBe(1);
       expect(transaction2.id).toBe(2);
     });
 
-    it('should throw BadRequestException if category does not exist', () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue(null);
+    it('should throw BadRequestException if category does not exist', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue(null);
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
         type: 'income',
-        categoryId: 999,
+        categoryId: otherCategoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
       };
 
-      expect(() => service.createTransaction(createDto)).toThrow(
+      await expect(service.createTransaction(createDto)).rejects.toThrow(
         BadRequestException,
       );
-      expect(() => service.createTransaction(createDto)).toThrow(
-        `Category with ID 999 does not exist`,
+      await expect(service.createTransaction(createDto)).rejects.toThrow(
+        `Category with ID ${otherCategoryId} does not exist`,
       );
     });
 
-    it('should persist transaction in memory', () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-        id: 1,
+    it('should persist transaction in memory', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        id: categoryId,
         name: 'Salary',
         type: 'income',
       } as any);
@@ -168,12 +170,12 @@ describe('TransactionsService', () => {
       const createDto: CreateTransactionDto = {
         amount: 1000,
         type: 'income',
-        categoryId: 1,
+        categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
       };
 
-      service.createTransaction(createDto);
+      await service.createTransaction(createDto);
       const allTransactions = service.getAllTransactions();
 
       expect(allTransactions.length).toBe(1);
@@ -182,9 +184,9 @@ describe('TransactionsService', () => {
   });
 
   describe('updateTransaction', () => {
-    beforeEach(() => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-        id: 1,
+    beforeEach(async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        id: categoryId,
         name: 'Salary',
         type: 'income',
       } as any);
@@ -192,44 +194,44 @@ describe('TransactionsService', () => {
       const createDto: CreateTransactionDto = {
         amount: 1000,
         type: 'income',
-        categoryId: 1,
+        categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
       };
 
-      service.createTransaction(createDto);
+      await service.createTransaction(createDto);
     });
 
-    it('should return null if transaction does not exist', () => {
+    it('should return null if transaction does not exist', async () => {
       const updateDto: UpdateTransactionDto = {
         amount: 2000,
       };
 
-      const result = service.updateTransaction(999, updateDto);
+      const result = await service.updateTransaction(999, updateDto);
       expect(result).toBeNull();
     });
 
-    it('should update amount field', () => {
+    it('should update amount field', async () => {
       const updateDto: UpdateTransactionDto = {
         amount: 2000,
       };
 
-      const updated = service.updateTransaction(1, updateDto);
+      const updated = await service.updateTransaction(1, updateDto);
 
       expect(updated).toBeDefined();
       expect(updated.amount).toBe(2000);
       expect(updated.description).toBe('Monthly salary');
-      expect(updated.categoryId).toBe(1);
+      expect(updated.categoryId).toBe(categoryId);
     });
 
-    it('should update multiple fields', () => {
+    it('should update multiple fields', async () => {
       const updateDto: UpdateTransactionDto = {
         amount: 2000,
         description: 'Bonus payment',
         type: 'bonus',
       };
 
-      const updated = service.updateTransaction(1, updateDto);
+      const updated = await service.updateTransaction(1, updateDto);
 
       expect(updated.amount).toBe(2000);
       expect(updated.description).toBe('Bonus payment');
@@ -237,54 +239,54 @@ describe('TransactionsService', () => {
       expect(updated.date).toBe('2025-01-01');
     });
 
-    it('should validate category when updating categoryId', () => {
+    it('should validate category when updating categoryId', async () => {
       const createDto: CreateTransactionDto = {
         amount: 1000,
         type: 'income',
-        categoryId: 1,
+        categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
       };
 
-      service.createTransaction(createDto);
+      await service.createTransaction(createDto);
 
       // Mock the method to return null for invalid category
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue(null);
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue(null);
 
       const updateDto: UpdateTransactionDto = {
-        categoryId: 999,
+        categoryId: otherCategoryId,
       };
 
-      expect(() => service.updateTransaction(1, updateDto)).toThrow(
+      await expect(service.updateTransaction(1, updateDto)).rejects.toThrow(
         BadRequestException,
       );
-      expect(() => service.updateTransaction(1, updateDto)).toThrow(
-        `Category with ID 999 does not exist`,
+      await expect(service.updateTransaction(1, updateDto)).rejects.toThrow(
+        `Category with ID ${otherCategoryId} does not exist`,
       );
     });
 
-    it('should not validate category if categoryId is not being updated', () => {
+    it('should not validate category if categoryId is not being updated', async () => {
       const updateDto: UpdateTransactionDto = {
         amount: 2000,
       };
 
-      const updated = service.updateTransaction(1, updateDto);
+      const updated = await service.updateTransaction(1, updateDto);
 
       expect(updated).toBeDefined();
       expect(updated.amount).toBe(2000);
       expect(categoriesService.getCategoryById).toHaveBeenCalledTimes(1); // Only called during create
     });
 
-    it('should update category if new category exists', () => {
+    it('should update category if new category exists', async () => {
       jest
         .spyOn(categoriesService, 'getCategoryById')
-        .mockReturnValueOnce({
-          id: 1,
+        .mockResolvedValueOnce({
+          id: categoryId,
           name: 'Salary',
           type: 'income',
         } as any)
-        .mockReturnValueOnce({
-          id: 2,
+        .mockResolvedValueOnce({
+          id: otherCategoryId,
           name: 'Bonus',
           type: 'income',
         } as any);
@@ -292,27 +294,27 @@ describe('TransactionsService', () => {
       const createDto: CreateTransactionDto = {
         amount: 1000,
         type: 'income',
-        categoryId: 1,
+        categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
       };
 
-      service.createTransaction(createDto);
+      await service.createTransaction(createDto);
 
       const updateDto: UpdateTransactionDto = {
-        categoryId: 2,
+        categoryId: otherCategoryId,
       };
 
-      const updated = service.updateTransaction(1, updateDto);
+      const updated = await service.updateTransaction(1, updateDto);
 
-      expect(updated.categoryId).toBe(2);
+      expect(updated.categoryId).toBe(otherCategoryId);
     });
   });
 
   describe('deleteTransaction', () => {
-    beforeEach(() => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-        id: 1,
+    beforeEach(async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        id: categoryId,
         name: 'Salary',
         type: 'income',
       } as any);
@@ -320,12 +322,12 @@ describe('TransactionsService', () => {
       const createDto: CreateTransactionDto = {
         amount: 1000,
         type: 'income',
-        categoryId: 1,
+        categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
       };
 
-      service.createTransaction(createDto);
+      await service.createTransaction(createDto);
     });
 
     it('should return null if transaction does not exist', () => {
@@ -348,9 +350,9 @@ describe('TransactionsService', () => {
       expect(remaining.length).toBe(0);
     });
 
-    it('should remove only the specified transaction', () => {
-      jest.spyOn(categoriesService, 'getCategoryById').mockReturnValue({
-        id: 1,
+    it('should remove only the specified transaction', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        id: categoryId,
         name: 'Salary',
         type: 'income',
       } as any);
@@ -358,12 +360,12 @@ describe('TransactionsService', () => {
       const createDto: CreateTransactionDto = {
         amount: 1000,
         type: 'income',
-        categoryId: 1,
+        categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
       };
 
-      service.createTransaction(createDto);
+      await service.createTransaction(createDto);
 
       service.deleteTransaction(1);
       const remaining = service.getAllTransactions();
