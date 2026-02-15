@@ -33,6 +33,8 @@ model Category {
   updatedAt    DateTime @updatedAt
   transactions Transaction[]
   budgets      Budget[]
+
+  @@unique([name, type])
 }
 
 model Transaction {
