@@ -53,8 +53,8 @@ export class BudgetService {
       return BudgetType.EXPENSE;
     }
 
-    if (normalized === BudgetType.SAVINGS) {
-      return BudgetType.SAVINGS;
+    if (normalized === BudgetType.INCOME) {
+      return BudgetType.INCOME;
     }
 
     throw new BadRequestException(`Invalid budget type: ${type}`);
