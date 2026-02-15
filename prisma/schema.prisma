@@ -22,7 +22,7 @@ enum TransactionType {
 
 enum BudgetType {
   EXPENSE
-  SAVINGS
+  INCOME
 }
 
 model Category {
