@@ -5,6 +5,7 @@ import { HealthModule } from './modules/health/health.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { TransactionsModule } from './modules/transactions/transactions.module';
 import { BudgetModule } from './modules/budgets/budget.module';
+import { AuthsModule } from './modules/auths/auths.module';
 import { SharedModule } from './modules/shared';
 
 @Module({
@@ -14,6 +15,7 @@ import { SharedModule } from './modules/shared';
     CategoriesModule,
     TransactionsModule,
     BudgetModule,
+    AuthsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
