@@ -12,6 +12,7 @@ type TransactionRecord = {
   amount: number;
   type: TransactionType;
   categoryId: string;
+  userId: string;
   date: Date;
   description: string | null;
 };
@@ -32,10 +33,18 @@ const createPrismaMock = () => {
 
   return {
     transaction: {
-      findMany: jest.fn(() => store),
+      findMany: jest.fn(
+        ({ where }) =>
+          store.filter((t) => !where?.userId || t.userId === where.userId) ??
+          [],
+      ),
       findUnique: jest.fn(
-        ({ where: { id } }) =>
-          store.find((transaction) => transaction.id === id) ?? null,
+        ({ where: { id, userId } }) =>
+          store.find(
+            (transaction) =>
+              transaction.id === id &&
+              (!userId || transaction.userId === userId),
+          ) ?? null,
       ),
       create: jest.fn(({ data }) => {
         const cleanedData = stripUndefined(data) as Omit<
@@ -84,6 +93,10 @@ const buildCategory = (id: string, name: string) => ({
 describe('TransactionsService', () => {
   let service: TransactionsService;
   let categoriesService: CategoriesService;
+
+  // Test data
+  const userId = 'user-123';
+  const otherUserId = 'user-456';
   const categoryId = '11111111-1111-1111-1111-111111111111';
   const otherCategoryId = '22222222-2222-2222-2222-222222222222';
   const missingTransactionId = '33333333-3333-3333-3333-333333333333';
@@ -118,11 +131,11 @@ describe('TransactionsService', () => {
 
   describe('getAllTransactions', () => {
     it('should return an empty array initially', async () => {
-      const transactions = await service.getAllTransactions();
+      const transactions = await service.getAllTransactions(userId);
       expect(transactions).toEqual([]);
     });
 
-    it('should return all transactions after creating some', async () => {
+    it('should return only user transactions filtered by userId', async () => {
       jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
         ...buildCategory(categoryId, 'Salary'),
       });
@@ -135,22 +148,29 @@ describe('TransactionsService', () => {
         description: 'Monthly salary',
       };
 
-      await service.createTransaction(createDto);
-      await service.createTransaction(createDto);
+      await service.createTransaction(createDto, userId);
+      await service.createTransaction(createDto, userId);
+      await service.createTransaction(createDto, otherUserId);
 
-      const transactions = await service.getAllTransactions();
-      expect(transactions.length).toBe(2);
+      const userTransactions = await service.getAllTransactions(userId);
+      expect(userTransactions.length).toBe(2);
+
+      const otherUserTransactions =
+        await service.getAllTransactions(otherUserId);
+      expect(otherUserTransactions.length).toBe(1);
     });
   });
 
   describe('getTransactionById', () => {
     it('should return undefined for non-existent transaction', async () => {
-      const transaction =
-        await service.getTransactionById(missingTransactionId);
+      const transaction = await service.getTransactionById(
+        missingTransactionId,
+        userId,
+      );
       expect(transaction).toBeUndefined();
     });
 
-    it('should return the transaction if it exists', async () => {
+    it('should return the transaction if it exists and user is owner', async () => {
       jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
         ...buildCategory(categoryId, 'Salary'),
       });
@@ -163,8 +183,8 @@ describe('TransactionsService', () => {
         description: 'Monthly salary',
       };
 
-      const created = await service.createTransaction(createDto);
-      const transaction = await service.getTransactionById(created.id);
+      const created = await service.createTransaction(createDto, userId);
+      const transaction = await service.getTransactionById(created.id, userId);
 
       expect(transaction).toBeDefined();
       if (!transaction) {
@@ -174,10 +194,8 @@ describe('TransactionsService', () => {
       expect(transaction.amount).toBe(1000);
       expect(transaction.description).toBe('Monthly salary');
     });
-  });
 
-  describe('createTransaction', () => {
-    it('should create a transaction with valid category', async () => {
+    it('should return undefined when user tries to access another users transaction', async () => {
       jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
         ...buildCategory(categoryId, 'Salary'),
       });
@@ -190,7 +208,31 @@ describe('TransactionsService', () => {
         description: 'Monthly salary',
       };
 
-      const transaction = await service.createTransaction(createDto);
+      const created = await service.createTransaction(createDto, userId);
+      const transaction = await service.getTransactionById(
+        created.id,
+        otherUserId,
+      );
+
+      expect(transaction).toBeUndefined();
+    });
+  });
+
+  describe('createTransaction', () => {
+    it('should create a transaction with valid category and userId', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        ...buildCategory(categoryId, 'Salary'),
+      });
+
+      const createDto: CreateTransactionDto = {
+        amount: 1000,
+        type: 'income',
+        categoryId,
+        date: '2025-01-01',
+        description: 'Monthly salary',
+      };
+
+      const transaction = await service.createTransaction(createDto, userId);
 
       expect(transaction).toBeDefined();
       expect(transaction.id).toBeDefined();
@@ -214,8 +256,8 @@ describe('TransactionsService', () => {
         description: 'Monthly salary',
       };
 
-      const transaction1 = await service.createTransaction(createDto);
-      const transaction2 = await service.createTransaction(createDto);
+      const transaction1 = await service.createTransaction(createDto, userId);
+      const transaction2 = await service.createTransaction(createDto, userId);
 
       expect(transaction1.id).not.toBe(transaction2.id);
     });
@@ -237,15 +279,15 @@ describe('TransactionsService', () => {
         description: 'Monthly salary',
       };
 
-      await expect(service.createTransaction(createDto)).rejects.toThrow(
-        BadRequestException,
-      );
-      await expect(service.createTransaction(createDto)).rejects.toThrow(
-        `Category with ID ${otherCategoryId} does not exist`,
-      );
+      await expect(
+        service.createTransaction(createDto, userId),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.createTransaction(createDto, userId),
+      ).rejects.toThrow(`Category with ID ${otherCategoryId} does not exist`);
     });
 
-    it('should persist transaction in memory', async () => {
+    it('should persist transaction with userId', async () => {
       jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
         ...buildCategory(categoryId, 'Salary'),
       });
@@ -258,8 +300,8 @@ describe('TransactionsService', () => {
         description: 'Monthly salary',
       };
 
-      await service.createTransaction(createDto);
-      const allTransactions = await service.getAllTransactions();
+      await service.createTransaction(createDto, userId);
+      const allTransactions = await service.getAllTransactions(userId);
 
       expect(allTransactions.length).toBe(1);
       expect(allTransactions[0].amount).toBe(1000);
@@ -280,7 +322,7 @@ describe('TransactionsService', () => {
         description: 'Monthly salary',
       };
 
-      await service.createTransaction(createDto);
+      await service.createTransaction(createDto, userId);
     });
 
     it('should return null if transaction does not exist', async () => {
@@ -291,6 +333,7 @@ describe('TransactionsService', () => {
       const result = await service.updateTransaction(
         missingTransactionId,
         updateDto,
+        userId,
       );
       expect(result).toBeNull();
     });
@@ -300,8 +343,12 @@ describe('TransactionsService', () => {
         amount: 2000,
       };
 
-      const [existing] = await service.getAllTransactions();
-      const updated = await service.updateTransaction(existing.id, updateDto);
+      const [existing] = await service.getAllTransactions(userId);
+      const updated = await service.updateTransaction(
+        existing.id,
+        updateDto,
+        userId,
+      );
 
       expect(updated).toBeDefined();
       if (!updated) {
@@ -319,8 +366,12 @@ describe('TransactionsService', () => {
         type: 'expense',
       };
 
-      const [existing] = await service.getAllTransactions();
-      const updated = await service.updateTransaction(existing.id, updateDto);
+      const [existing] = await service.getAllTransactions(userId);
+      const updated = await service.updateTransaction(
+        existing.id,
+        updateDto,
+        userId,
+      );
 
       if (!updated) {
         throw new Error('Expected updated transaction to be defined');
@@ -340,9 +391,8 @@ describe('TransactionsService', () => {
         description: 'Monthly salary',
       };
 
-      await service.createTransaction(createDto);
+      await service.createTransaction(createDto, userId);
 
-      // Mock the method to return null for invalid category
       jest
         .spyOn(categoriesService, 'getCategoryById')
         .mockRejectedValue(
@@ -355,13 +405,13 @@ describe('TransactionsService', () => {
         categoryId: otherCategoryId,
       };
 
-      const [existing] = await service.getAllTransactions();
+      const [existing] = await service.getAllTransactions(userId);
 
       await expect(
-        service.updateTransaction(existing.id, updateDto),
+        service.updateTransaction(existing.id, updateDto, userId),
       ).rejects.toThrow(BadRequestException);
       await expect(
-        service.updateTransaction(existing.id, updateDto),
+        service.updateTransaction(existing.id, updateDto, userId),
       ).rejects.toThrow(`Category with ID ${otherCategoryId} does not exist`);
     });
 
@@ -370,8 +420,12 @@ describe('TransactionsService', () => {
         amount: 2000,
       };
 
-      const [existing] = await service.getAllTransactions();
-      const updated = await service.updateTransaction(existing.id, updateDto);
+      const [existing] = await service.getAllTransactions(userId);
+      const updated = await service.updateTransaction(
+        existing.id,
+        updateDto,
+        userId,
+      );
 
       expect(updated).toBeDefined();
       if (!updated) {
@@ -401,14 +455,18 @@ describe('TransactionsService', () => {
         description: 'Monthly salary',
       };
 
-      await service.createTransaction(createDto);
+      await service.createTransaction(createDto, userId);
 
       const updateDto: UpdateTransactionDto = {
         categoryId: otherCategoryId,
       };
 
-      const [existing] = await service.getAllTransactions();
-      const updated = await service.updateTransaction(existing.id, updateDto);
+      const [existing] = await service.getAllTransactions(userId);
+      const updated = await service.updateTransaction(
+        existing.id,
+        updateDto,
+        userId,
+      );
 
       if (!updated) {
         throw new Error('Expected updated transaction to be defined');
@@ -431,17 +489,20 @@ describe('TransactionsService', () => {
         description: 'Monthly salary',
       };
 
-      await service.createTransaction(createDto);
+      await service.createTransaction(createDto, userId);
     });
 
     it('should return null if transaction does not exist', async () => {
-      const result = await service.deleteTransaction(missingTransactionId);
+      const result = await service.deleteTransaction(
+        missingTransactionId,
+        userId,
+      );
       expect(result).toBeNull();
     });
 
     it('should delete a transaction and return it', async () => {
-      const [existing] = await service.getAllTransactions();
-      const deleted = await service.deleteTransaction(existing.id);
+      const [existing] = await service.getAllTransactions(userId);
+      const deleted = await service.deleteTransaction(existing.id, userId);
 
       expect(deleted).toBeDefined();
       if (!deleted) {
@@ -452,9 +513,9 @@ describe('TransactionsService', () => {
     });
 
     it('should remove transaction from array', async () => {
-      const [existing] = await service.getAllTransactions();
-      await service.deleteTransaction(existing.id);
-      const remaining = await service.getAllTransactions();
+      const [existing] = await service.getAllTransactions(userId);
+      await service.deleteTransaction(existing.id, userId);
+      const remaining = await service.getAllTransactions(userId);
 
       expect(remaining.length).toBe(0);
     });
@@ -472,14 +533,21 @@ describe('TransactionsService', () => {
         description: 'Monthly salary',
       };
 
-      await service.createTransaction(createDto);
+      await service.createTransaction(createDto, userId);
 
-      const [first] = await service.getAllTransactions();
-      await service.deleteTransaction(first.id);
-      const remaining = await service.getAllTransactions();
+      const [first] = await service.getAllTransactions(userId);
+      await service.deleteTransaction(first.id, userId);
+      const remaining = await service.getAllTransactions(userId);
 
       expect(remaining.length).toBe(1);
       expect(remaining[0].id).not.toBe(first.id);
+    });
+
+    it('should return null when user tries to delete another users transaction', async () => {
+      const [existing] = await service.getAllTransactions(userId);
+      const result = await service.deleteTransaction(existing.id, otherUserId);
+
+      expect(result).toBeNull();
     });
   });
 });

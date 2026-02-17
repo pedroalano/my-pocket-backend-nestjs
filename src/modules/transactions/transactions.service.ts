@@ -51,16 +51,17 @@ export class TransactionsService {
     description: true,
   };
 
-  async getAllTransactions() {
+  async getAllTransactions(userId: string) {
     const transactions = await this.prisma.transaction.findMany({
+      where: { userId },
       select: this.transactionSelect,
     });
     return transactions.map((transaction) => this.mapTransaction(transaction));
   }
 
-  async getTransactionById(id: string) {
+  async getTransactionById(id: string, userId: string) {
     const transaction = await this.prisma.transaction.findUnique({
-      where: { id },
+      where: { id, userId },
       select: this.transactionSelect,
     });
     if (!transaction) {
@@ -69,13 +70,17 @@ export class TransactionsService {
     return this.mapTransaction(transaction);
   }
 
-  async createTransaction(createTransactionDto: CreateTransactionDto) {
+  async createTransaction(
+    createTransactionDto: CreateTransactionDto,
+    userId: string,
+  ) {
     // Validate category existence
     let category = null;
 
     try {
       category = await this.categoriesService.getCategoryById(
         createTransactionDto.categoryId,
+        userId,
       );
     } catch (error) {
       if (!(error instanceof NotFoundException)) {
@@ -96,6 +101,7 @@ export class TransactionsService {
         categoryId: createTransactionDto.categoryId,
         date: new Date(createTransactionDto.date),
         description: createTransactionDto.description,
+        userId,
       },
       select: this.transactionSelect,
     });
@@ -105,6 +111,7 @@ export class TransactionsService {
   async updateTransaction(
     id: string,
     updateTransactionDto: UpdateTransactionDto,
+    userId: string,
   ) {
     // Validate category existence if categoryId is being updated
     if (updateTransactionDto.categoryId !== undefined) {
@@ -113,6 +120,7 @@ export class TransactionsService {
       try {
         category = await this.categoriesService.getCategoryById(
           updateTransactionDto.categoryId,
+          userId,
         );
       } catch (error) {
         if (!(error instanceof NotFoundException)) {
@@ -157,9 +165,9 @@ export class TransactionsService {
     return this.mapTransaction(updatedTransaction);
   }
 
-  async deleteTransaction(id: string) {
+  async deleteTransaction(id: string, userId: string) {
     const existingTransaction = await this.prisma.transaction.findUnique({
-      where: { id },
+      where: { id, userId },
       select: this.transactionSelect,
     });
 
