@@ -12,8 +12,9 @@ import { PrismaService } from '../shared/prisma.service';
 export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAllCategories() {
+  async getAllCategories(userId: string) {
     const categories = await this.prisma.category.findMany({
+      where: { userId },
       orderBy: {
         name: 'asc',
       },
@@ -22,9 +23,9 @@ export class CategoriesService {
     return categories.map((category) => this.toApiCategory(category));
   }
 
-  async getCategoryById(id: string) {
+  async getCategoryById(id: string, userId: string) {
     const category = await this.prisma.category.findUnique({
-      where: { id },
+      where: { id, userId },
     });
 
     if (!category) {
@@ -34,19 +35,24 @@ export class CategoriesService {
     return this.toApiCategory(category);
   }
 
-  async createCategory(createCategoryDto: CreateCategoryDto) {
+  async createCategory(createCategoryDto: CreateCategoryDto, userId: string) {
     const category = await this.prisma.category.create({
       data: {
         name: createCategoryDto.name,
         type: this.normalizeCategoryType(createCategoryDto.type),
+        userId,
       },
     });
 
     return this.toApiCategory(category);
   }
 
-  async updateCategory(id: string, updateCategoryDto: UpdateCategoryDto) {
-    await this.ensureCategoryExists(id);
+  async updateCategory(
+    id: string,
+    updateCategoryDto: UpdateCategoryDto,
+    userId: string,
+  ) {
+    await this.ensureCategoryExists(id, userId);
 
     const data: { name?: string; type?: CategoryType } = {};
 
@@ -66,8 +72,8 @@ export class CategoriesService {
     return this.toApiCategory(category);
   }
 
-  async deleteCategory(id: string) {
-    await this.ensureCategoryExists(id);
+  async deleteCategory(id: string, userId: string) {
+    await this.ensureCategoryExists(id, userId);
 
     const category = await this.prisma.category.delete({
       where: { id },
@@ -93,9 +99,9 @@ export class CategoriesService {
     };
   }
 
-  private async ensureCategoryExists(id: string) {
+  private async ensureCategoryExists(id: string, userId: string) {
     const category = await this.prisma.category.findUnique({
-      where: { id },
+      where: { id, userId },
       select: { id: true },
     });
 
