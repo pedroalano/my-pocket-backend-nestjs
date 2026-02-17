@@ -17,6 +17,20 @@ describe('CategoriesService', () => {
     },
   } as unknown as PrismaService;
 
+  // Test data
+  const userId = 'user-123';
+  const otherUserId = 'user-456';
+  const categoryId = '1a2b3c4d-0000-0000-0000-000000000000';
+
+  const mockCategory = {
+    id: categoryId,
+    name: 'PayCheck',
+    type: 'INCOME',
+    userId,
+    createdAt: new Date('2026-02-13T00:00:00.000Z'),
+    updatedAt: new Date('2026-02-13T00:00:00.000Z'),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -38,44 +52,43 @@ describe('CategoriesService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should create a category', async () => {
-    const categoryResponse = {
-      id: '1a2b3c4d-0000-0000-0000-000000000000',
+  it('should create a category with userId', async () => {
+    const createDto = {
       name: 'PayCheck',
-      type: 'INCOME',
-      createdAt: new Date('2026-02-13T00:00:00.000Z'),
-      updatedAt: new Date('2026-02-13T00:00:00.000Z'),
+      type: 'income',
     };
 
     jest
       .spyOn(prismaService.category, 'create')
-      .mockResolvedValue(categoryResponse);
+      .mockResolvedValue(mockCategory);
 
-    const category = await service.createCategory({
-      name: 'PayCheck',
-      type: 'income',
+    const category = await service.createCategory(createDto, userId);
+
+    expect(prismaService.category.create).toHaveBeenCalledWith({
+      data: {
+        name: 'PayCheck',
+        type: 'INCOME',
+        userId,
+      },
     });
+
     expect(category).toEqual({
-      ...categoryResponse,
+      ...mockCategory,
       type: 'income',
     });
   });
 
-  it('should get all categories ordered by name', async () => {
+  it('should get all categories filtered by userId', async () => {
     const categoriesResponse = [
       {
-        id: 'a',
+        ...mockCategory,
         name: 'Alpha',
-        type: 'INCOME',
-        createdAt: new Date('2026-02-13T00:00:00.000Z'),
-        updatedAt: new Date('2026-02-13T00:00:00.000Z'),
       },
       {
-        id: 'b',
+        ...mockCategory,
+        id: 'other-id',
         name: 'Zeta',
         type: 'EXPENSE',
-        createdAt: new Date('2026-02-13T00:00:00.000Z'),
-        updatedAt: new Date('2026-02-13T00:00:00.000Z'),
       },
     ];
 
@@ -83,10 +96,13 @@ describe('CategoriesService', () => {
       .spyOn(prismaService.category, 'findMany')
       .mockResolvedValue(categoriesResponse);
 
-    const categories = await service.getAllCategories();
+    const categories = await service.getAllCategories(userId);
+
     expect(prismaService.category.findMany).toHaveBeenCalledWith({
+      where: { userId },
       orderBy: { name: 'asc' },
     });
+
     expect(categories).toEqual([
       {
         ...categoriesResponse[0],
@@ -99,62 +115,70 @@ describe('CategoriesService', () => {
     ]);
   });
 
-  it('should get category by id', async () => {
-    const categoryResponse = {
-      id: '1a2b3c4d-0000-0000-0000-000000000000',
-      name: 'PayCheck',
-      type: 'INCOME',
-      createdAt: new Date('2026-02-13T00:00:00.000Z'),
-      updatedAt: new Date('2026-02-13T00:00:00.000Z'),
-    };
-
+  it('should get category by id when user is owner', async () => {
     jest
       .spyOn(prismaService.category, 'findUnique')
-      .mockResolvedValue(categoryResponse);
+      .mockResolvedValue(mockCategory);
 
-    const category = await service.getCategoryById(
-      '1a2b3c4d-0000-0000-0000-000000000000',
-    );
+    const category = await service.getCategoryById(categoryId, userId);
+
+    expect(prismaService.category.findUnique).toHaveBeenCalledWith({
+      where: { id: categoryId, userId },
+    });
 
     expect(category).toEqual({
-      ...categoryResponse,
+      ...mockCategory,
       type: 'income',
     });
   });
 
-  it('should throw when category is missing', async () => {
+  it('should throw NotFoundException when category not found or user not owner', async () => {
     jest.spyOn(prismaService.category, 'findUnique').mockResolvedValue(null);
 
-    await expect(service.getCategoryById('missing-id')).rejects.toThrow(
+    await expect(service.getCategoryById(categoryId, userId)).rejects.toThrow(
       NotFoundException,
     );
+
+    expect(prismaService.category.findUnique).toHaveBeenCalledWith({
+      where: { id: categoryId, userId },
+    });
   });
 
-  it('should update a category partially', async () => {
-    const existingCategory = {
-      id: '1a2b3c4d-0000-0000-0000-000000000000',
-      name: 'PayCheck',
-      type: 'INCOME',
-      createdAt: new Date('2026-02-13T00:00:00.000Z'),
-      updatedAt: new Date('2026-02-13T00:00:00.000Z'),
-    };
+  it('should throw NotFoundException when user tries to access another users category', async () => {
+    jest.spyOn(prismaService.category, 'findUnique').mockResolvedValue(null);
 
+    await expect(
+      service.getCategoryById(categoryId, otherUserId),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(prismaService.category.findUnique).toHaveBeenCalledWith({
+      where: { id: categoryId, userId: otherUserId },
+    });
+  });
+
+  it('should update a category partially with owner validation', async () => {
     const updatedCategory = {
-      ...existingCategory,
+      ...mockCategory,
       name: 'Salary',
     };
 
     jest
       .spyOn(prismaService.category, 'findUnique')
-      .mockResolvedValue(existingCategory);
+      .mockResolvedValue(mockCategory);
     jest
       .spyOn(prismaService.category, 'update')
       .mockResolvedValue(updatedCategory);
 
     const result = await service.updateCategory(
-      '1a2b3c4d-0000-0000-0000-000000000000',
+      categoryId,
       { name: 'Salary' },
+      userId,
     );
+
+    expect(prismaService.category.findUnique).toHaveBeenCalledWith({
+      where: { id: categoryId, userId },
+      select: { id: true },
+    });
 
     expect(result).toEqual({
       ...updatedCategory,
@@ -162,27 +186,56 @@ describe('CategoriesService', () => {
     });
   });
 
-  it('should delete a category', async () => {
-    const deletedCategory = {
-      id: '1a2b3c4d-0000-0000-0000-000000000000',
-      name: 'PayCheck',
-      type: 'INCOME',
-      createdAt: new Date('2026-02-13T00:00:00.000Z'),
-      updatedAt: new Date('2026-02-13T00:00:00.000Z'),
-    };
+  it('should throw NotFoundException when user tries to update another users category', async () => {
+    jest.spyOn(prismaService.category, 'findUnique').mockResolvedValue(null);
+
+    await expect(
+      service.updateCategory(categoryId, { name: 'Salary' }, otherUserId),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(prismaService.category.findUnique).toHaveBeenCalledWith({
+      where: { id: categoryId, userId: otherUserId },
+      select: { id: true },
+    });
+  });
+
+  it('should delete a category with owner validation', async () => {
+    const deletedCategory = mockCategory;
 
     jest
       .spyOn(prismaService.category, 'findUnique')
-      .mockResolvedValue({ id: deletedCategory.id } as any);
+      .mockResolvedValue({ id: categoryId } as any);
     jest
       .spyOn(prismaService.category, 'delete')
       .mockResolvedValue(deletedCategory);
 
-    const result = await service.deleteCategory(deletedCategory.id);
+    const result = await service.deleteCategory(categoryId, userId);
+
+    expect(prismaService.category.findUnique).toHaveBeenCalledWith({
+      where: { id: categoryId, userId },
+      select: { id: true },
+    });
+
+    expect(prismaService.category.delete).toHaveBeenCalledWith({
+      where: { id: categoryId },
+    });
 
     expect(result).toEqual({
       ...deletedCategory,
       type: 'income',
+    });
+  });
+
+  it('should throw NotFoundException when user tries to delete another users category', async () => {
+    jest.spyOn(prismaService.category, 'findUnique').mockResolvedValue(null);
+
+    await expect(
+      service.deleteCategory(categoryId, otherUserId),
+    ).rejects.toThrow(NotFoundException);
+
+    expect(prismaService.category.findUnique).toHaveBeenCalledWith({
+      where: { id: categoryId, userId: otherUserId },
+      select: { id: true },
     });
   });
 });
