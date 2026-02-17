@@ -128,16 +128,17 @@ export class BudgetService {
     return Number(spent._sum.amount ?? 0);
   }
 
-  async getAllBudgets() {
+  async getAllBudgets(userId: string) {
     const budgets = await this.prisma.budget.findMany({
+      where: { userId },
       select: this.budgetSelect,
     });
     return budgets.map((budget) => this.mapBudget(budget));
   }
 
-  async getBudgetById(id: string) {
+  async getBudgetById(id: string, userId: string) {
     const budget = await this.prisma.budget.findUnique({
-      where: { id },
+      where: { id, userId },
       select: this.budgetSelect,
     });
 
@@ -148,7 +149,7 @@ export class BudgetService {
     return this.mapBudget(budget);
   }
 
-  async createBudget(budgetData: CreateBudgetDto) {
+  async createBudget(budgetData: CreateBudgetDto, userId: string) {
     this.validateBudgetData(budgetData);
 
     let category = null;
@@ -156,6 +157,7 @@ export class BudgetService {
     try {
       category = await this.categoriesService.getCategoryById(
         budgetData.categoryId,
+        userId,
       );
     } catch (error) {
       if (!(error instanceof NotFoundException)) {
@@ -176,6 +178,7 @@ export class BudgetService {
           month: budgetData.month,
           year: budgetData.year,
           type: this.normalizeBudgetType(budgetData.type),
+          userId,
         },
         select: this.budgetSelect,
       });
@@ -193,7 +196,7 @@ export class BudgetService {
     }
   }
 
-  async updateBudget(id: string, budgetData: UpdateBudgetDto) {
+  async updateBudget(id: string, budgetData: UpdateBudgetDto, userId: string) {
     if (
       budgetData.month !== undefined ||
       budgetData.year !== undefined ||
@@ -208,6 +211,7 @@ export class BudgetService {
       try {
         category = await this.categoriesService.getCategoryById(
           budgetData.categoryId,
+          userId,
         );
       } catch (error) {
         if (!(error instanceof NotFoundException)) {
@@ -265,9 +269,9 @@ export class BudgetService {
     }
   }
 
-  async deleteBudget(id: string) {
+  async deleteBudget(id: string, userId: string) {
     const existingBudget = await this.prisma.budget.findUnique({
-      where: { id },
+      where: { id, userId },
       select: this.budgetSelect,
     });
 
@@ -298,8 +302,8 @@ export class BudgetService {
     }
   }
 
-  async getSpentAmount(budgetId: string): Promise<number> {
-    const budget = await this.getBudgetById(budgetId);
+  async getSpentAmount(budgetId: string, userId: string): Promise<number> {
+    const budget = await this.getBudgetById(budgetId, userId);
     if (!budget) {
       return 0;
     }
@@ -307,8 +311,8 @@ export class BudgetService {
     return this.calculateSpentAmount(budget);
   }
 
-  async getRemainingBudget(budgetId: string): Promise<number> {
-    const budget = await this.getBudgetById(budgetId);
+  async getRemainingBudget(budgetId: string, userId: string): Promise<number> {
+    const budget = await this.getBudgetById(budgetId, userId);
     if (!budget) {
       return 0;
     }
@@ -319,8 +323,9 @@ export class BudgetService {
 
   async getBudgetWithSpending(
     budgetId: string,
+    userId: string,
   ): Promise<BudgetWithSpending | null> {
-    const budget = await this.getBudgetById(budgetId);
+    const budget = await this.getBudgetById(budgetId, userId);
     if (!budget) {
       return null;
     }
@@ -338,8 +343,8 @@ export class BudgetService {
     };
   }
 
-  async getTransactionsForBudget(budgetId: string) {
-    const budget = await this.getBudgetById(budgetId);
+  async getTransactionsForBudget(budgetId: string, userId: string) {
+    const budget = await this.getBudgetById(budgetId, userId);
     if (!budget) {
       return [];
     }
@@ -361,8 +366,8 @@ export class BudgetService {
     return transactions.map((transaction) => this.mapTransaction(transaction));
   }
 
-  async getBudgetWithCategory(budgetId: string): Promise<any> {
-    const budget = await this.getBudgetById(budgetId);
+  async getBudgetWithCategory(budgetId: string, userId: string): Promise<any> {
+    const budget = await this.getBudgetById(budgetId, userId);
     if (!budget) {
       return null;
     }
@@ -372,6 +377,7 @@ export class BudgetService {
     try {
       category = await this.categoriesService.getCategoryById(
         budget.categoryId,
+        userId,
       );
     } catch (error) {
       if (!(error instanceof NotFoundException)) {
@@ -385,8 +391,11 @@ export class BudgetService {
     };
   }
 
-  async getBudgetsWithTransactions(budgetId: string): Promise<any> {
-    const budget = await this.getBudgetById(budgetId);
+  async getBudgetsWithTransactions(
+    budgetId: string,
+    userId: string,
+  ): Promise<any> {
+    const budget = await this.getBudgetById(budgetId, userId);
     if (!budget) {
       return null;
     }
@@ -396,6 +405,7 @@ export class BudgetService {
     try {
       category = await this.categoriesService.getCategoryById(
         budget.categoryId,
+        userId,
       );
     } catch (error) {
       if (!(error instanceof NotFoundException)) {
@@ -404,7 +414,7 @@ export class BudgetService {
     }
 
     const [transactions, spent] = await Promise.all([
-      this.getTransactionsForBudget(budgetId),
+      this.getTransactionsForBudget(budgetId, userId),
       this.calculateSpentAmount(budget),
     ]);
     const remaining = budget.amount - spent;
@@ -423,9 +433,10 @@ export class BudgetService {
 
   async getBudgetsByCategory(
     categoryId: string,
+    userId: string,
   ): Promise<BudgetWithSpending[]> {
     const budgets = await this.prisma.budget.findMany({
-      where: { categoryId },
+      where: { categoryId, userId },
       select: this.budgetSelect,
     });
 
