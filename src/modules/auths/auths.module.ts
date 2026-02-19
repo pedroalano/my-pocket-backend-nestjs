@@ -6,6 +6,7 @@ import { AuthsService } from './auths.service';
 import { AuthsController } from './auths.controller';
 import { SharedModule } from '../shared/shared.module';
 import { JwtStrategy } from './jwt.strategy';
+import { JwtAuthGuard } from './jwt-auth.guard';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { JwtStrategy } from './jwt.strategy';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => {
+      useFactory: (configService: ConfigService) => {
         const secret = configService.get<string>('JWT_SECRET');
         const expiresIn = configService.get<number>('JWT_EXPIRATION');
 
@@ -38,7 +39,7 @@ import { JwtStrategy } from './jwt.strategy';
     }),
   ],
   controllers: [AuthsController],
-  providers: [AuthsService, JwtStrategy],
-  exports: [AuthsService, JwtService],
+  providers: [AuthsService, JwtStrategy, JwtAuthGuard],
+  exports: [AuthsService, JwtAuthGuard],
 })
 export class AuthsModule {}
