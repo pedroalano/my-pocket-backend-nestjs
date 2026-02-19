@@ -7,33 +7,41 @@ import {
   Delete,
   Put,
   ParseUUIDPipe,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
-
-// TODO: Replace with actual userId from authentication context
-const DEMO_USER_ID = 'd1a2b3c4-0000-0000-0000-000000000000';
+import { JwtAuthGuard } from '../auths/jwt-auth.guard';
+import type { AuthenticatedRequest } from '../auths/interfaces/authenticated-request.interface';
 
 @Controller('transactions')
+@UseGuards(JwtAuthGuard)
 export class TransactionController {
   constructor(private readonly transactionsService: TransactionsService) {}
 
   @Get()
-  async getAllTransactions() {
-    return this.transactionsService.getAllTransactions(DEMO_USER_ID);
+  async getAllTransactions(@Request() req: AuthenticatedRequest) {
+    return this.transactionsService.getAllTransactions(req.user.userId);
   }
 
   @Get(':id')
-  async getTransactionById(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.transactionsService.getTransactionById(id, DEMO_USER_ID);
+  async getTransactionById(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.transactionsService.getTransactionById(id, req.user.userId);
   }
 
   @Post()
-  async createTransaction(@Body() createTransactionDto: CreateTransactionDto) {
+  async createTransaction(
+    @Body() createTransactionDto: CreateTransactionDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.transactionsService.createTransaction(
       createTransactionDto,
-      DEMO_USER_ID,
+      req.user.userId,
     );
   }
 
@@ -41,16 +49,20 @@ export class TransactionController {
   async updateTransaction(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateTransactionDto: UpdateTransactionDto,
+    @Request() req: AuthenticatedRequest,
   ) {
     return this.transactionsService.updateTransaction(
       id,
       updateTransactionDto,
-      DEMO_USER_ID,
+      req.user.userId,
     );
   }
 
   @Delete(':id')
-  async deleteTransaction(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.transactionsService.deleteTransaction(id, DEMO_USER_ID);
+  async deleteTransaction(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.transactionsService.deleteTransaction(id, req.user.userId);
   }
 }
