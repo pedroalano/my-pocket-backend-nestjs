@@ -1,26 +1,19 @@
 # Personal Finance API
 
-This project is a backend API for a personal finance management application.
-
-The goal is to provide a clean, scalable, and well-structured API to manage:
-
-- Categories
-- Transactions
-- Budgets
-- Users and authentication (future)
-
-The project is built using **NestJS** and follows modular architecture and best practices.
+A secure backend API for personal finance management built with NestJS, featuring JWT authentication, Prisma ORM, and PostgreSQL.
 
 ---
 
 ## 🚀 Tech Stack
 
-- Node.js
-- NestJS
-- TypeScript
-- REST API
-- class-validator & class-transformer (validation)
-- Jest (testing framework)
+- **Framework:** NestJS
+- **Language:** TypeScript
+- **Database:** PostgreSQL
+- **ORM:** Prisma
+- **Authentication:** JWT + Passport
+- **Validation:** class-validator & class-transformer
+- **Testing:** Jest
+- **Security:** bcrypt password hashing
 
 ---
 
@@ -28,29 +21,51 @@ The project is built using **NestJS** and follows modular architecture and best 
 
 ✅ **Core Features Implemented**
 
-⚠️ **Important Note:** Data is currently stored **in-memory** (arrays) and will reset when the server restarts. Database integration is pending.
-
-This project has a solid foundation with:
-
-- ✅ Three core business modules fully implemented
-- ✅ 15+ REST API endpoints with complete CRUD operations
-- ✅ Advanced budget analytics and spending tracking
+- ✅ User registration and authentication with JWT
+- ✅ Protected routes with authentication guards
+- ✅ PostgreSQL database with Prisma ORM
+- ✅ Categories, Transactions, and Budgets management
+- ✅ Budget analytics and spending tracking
 - ✅ Comprehensive validation using DTOs
 - ✅ Global exception handling
-- ✅ 56 unit tests with good coverage
-- ❌ Database integration (next priority)
-- ❌ Authentication & authorization
+- ✅ 56+ unit tests with good coverage
+- ❌ Refresh tokens (out of scope)
+- ❌ Role-based authorization (future)
+
+---
+
+## ⚙️ Environment Setup
+
+Create a `.env` file in the root directory:
+
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/my_pocket_db"
+JWT_SECRET="your-secret-key-here"
+JWT_EXPIRATION=3600
+```
 
 ---
 
 ## ▶️ Running the Project
 
 ```bash
+# Install dependencies
 npm install
+
+# Run database migrations
+npm run db:migrate:dev
+
+# Seed database (optional)
+npm run db:seed
+
+# Start development server
 npm run start:dev
+
+# Run Prisma Studio (database GUI)
+npm run db:studio
 ```
 
-The server will start in development mode on port 3000.
+The server will start on port 3000.
 
 ---
 
@@ -58,11 +73,19 @@ The server will start in development mode on port 3000.
 
 The project follows **NestJS modular architecture** with clean separation of concerns:
 
-- **Modular Design:** Each business domain (Categories, Transactions, Budgets) is isolated in its own module
+- **Modular Design:** Each business domain (Auth, Categories, Transactions, Budgets) is isolated in its own module
 - **Dependency Injection:** Services are injectable and shared across modules
+- **Authentication Layer:**
+  - JWT strategy with Passport integration
+  - `JwtAuthGuard` for route protection
+  - User context extraction from JWT tokens
+- **Database Layer:**
+  - Prisma ORM for type-safe database access
+  - PostgreSQL for data persistence
+  - Cascading deletes for data integrity
 - **Module Dependencies:**
-  - `BudgetModule` imports `CategoriesModule` and `TransactionsModule`
-  - `TransactionsModule` imports `CategoriesModule`
+  - All resource modules (Categories, Transactions, Budgets) are protected with `JwtAuthGuard`
+  - `BudgetModule` imports `CategoriesModule`
   - Each module exports its service for use by dependent modules
 - **Global Features:**
   - Validation pipe with DTO transformation and whitelist enforcement
@@ -72,22 +95,42 @@ The project follows **NestJS modular architecture** with clean separation of con
 
 ## ✨ Features
 
+### Authentication Module
+
+- **User Registration:**
+  - Email/password registration with validation
+  - Bcrypt password hashing (10 salt rounds)
+  - Automatic JWT token generation on signup
+  - Email uniqueness validation
+- **User Login:**
+  - Credential validation with bcrypt comparison
+  - JWT token generation on successful login
+  - Generic error messages to prevent account enumeration
+- **JWT Authentication:**
+  - Bearer token validation
+  - User context attached to requests
+  - 401 responses for invalid/missing tokens
+
 ### Categories Module
 
 - Full CRUD operations for category management
-- Category types: income, expense, savings, etc.
+- Category types: INCOME, EXPENSE
+- User-scoped categories (users can only access their own)
 - Validated DTOs with required fields
+- Unique constraint: name + type per user
 
 ### Transactions Module
 
 - Complete transaction lifecycle management
-- Automatic category validation (prevents orphaned transactions)
+- User-scoped transactions
+- Automatic category validation
 - Tracks amount, description, category, date, and type
 - Integration with Categories module
 
 ### Budgets Module (Advanced)
 
 - Full CRUD operations for budget management
+- User-scoped budgets
 - **Budget Analytics:**
   - Calculate spent amount from transactions
   - Calculate remaining budget
@@ -96,8 +139,16 @@ The project follows **NestJS modular architecture** with clean separation of con
 - **Category Budget Overview:** Get all budgets for a specific category
 - **Validation:**
   - Month validation (1-12)
-  - Duplicate prevention (same category/type/period)
+  - Duplicate prevention (same category/period per user)
   - Category existence validation
+
+### Database Schema
+
+- **User:** Authentication and ownership
+- **Category:** User-owned expense/income categories
+- **Transaction:** Financial transactions linked to categories and users
+- **Budget:** Monthly budgets with analytics
+- **Relationships:** Cascading deletes for data integrity
 
 ### Global Features
 
@@ -110,41 +161,52 @@ The project follows **NestJS modular architecture** with clean separation of con
 
 ## 🔌 API Endpoints
 
-### Categories
+### Authentication (Public)
 
-- `GET /categories` - Get all categories
+- `POST /auths/register` - Register a new user
+- `POST /auths/login` - Login and receive JWT token
+
+### Categories (Protected)
+
+- `GET /categories` - Get all user categories
 - `GET /categories/:id` - Get category by ID
 - `POST /categories` - Create a new category
-- `PATCH /categories/:id` - Update a category
+- `PUT /categories/:id` - Update a category
 - `DELETE /categories/:id` - Delete a category
 
-### Transactions
+### Transactions (Protected)
 
-- `GET /transactions` - Get all transactions
+- `GET /transactions` - Get all user transactions
 - `GET /transactions/:id` - Get transaction by ID
 - `POST /transactions` - Create a new transaction
-- `PATCH /transactions/:id` - Update a transaction
+- `PUT /transactions/:id` - Update a transaction
 - `DELETE /transactions/:id` - Delete a transaction
 
-### Budgets
+### Budgets (Protected)
 
-- `GET /budgets` - Get all budgets
+- `GET /budgets` - Get all user budgets
 - `GET /budgets/:id` - Get budget by ID
 - `GET /budgets/:id/details` - Get budget with full details (category, transactions, metrics)
 - `GET /budgets/category/:categoryId` - Get all budgets for a category
 - `POST /budgets` - Create a new budget
-- `PATCH /budgets/:id` - Update a budget
+- `PUT /budgets/:id` - Update a budget
 - `DELETE /budgets/:id` - Delete a budget
 
-### Health
+### Health (Public)
 
 - `GET /health` - Health check endpoint
+
+**Authentication:** Protected endpoints require a valid JWT token in the Authorization header:
+
+```
+Authorization: Bearer <your-jwt-token>
+```
 
 ---
 
 ## 🧪 Testing
 
-The project includes **56 unit tests** covering all services:
+The project includes **56+ unit tests** covering all services:
 
 ```bash
 # Run all tests
@@ -162,20 +224,21 @@ npm run test:cov
 - CategoriesService: 6 tests
 - TransactionsService: 19 tests
 - BudgetService: 30 tests (includes complex analytics and validation)
+- AuthsService: Unit tests for registration and login
 - E2E tests: Basic integration test
 
 ---
 
 ## 🎯 What's Next
 
-- [ ] **Database integration** (Prisma ORM recommended)
-- [ ] **Authentication & authorization** (JWT + Passport)
-- [ ] **User management** module
-- [ ] **Environment configuration** module
+- [ ] **Refresh tokens** for better security
+- [ ] **Role-based authorization** (admin/user roles)
 - [ ] **API documentation** (Swagger/OpenAPI)
 - [ ] **Logging system** (Winston or similar)
 - [ ] **Docker** containerization
 - [ ] **CI/CD** pipeline
+- [ ] **Rate limiting** and security headers
+- [ ] **Email verification** for new users
 
 ---
 
