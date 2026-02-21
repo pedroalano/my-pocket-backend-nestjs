@@ -103,16 +103,20 @@ export class BudgetService {
     return TransactionType.INCOME;
   }
 
-  private async calculateSpentAmount(budget: {
-    categoryId: string;
-    month: number;
-    year: number;
-    type: BudgetType;
-  }) {
+  private async calculateSpentAmount(
+    budget: {
+      categoryId: string;
+      month: number;
+      year: number;
+      type: BudgetType;
+    },
+    userId: string,
+  ) {
     const { start, end } = this.getMonthRange(budget.month, budget.year);
     const transactionType = this.getTransactionTypeForBudget(budget.type);
     const spent = await this.prisma.transaction.aggregate({
       where: {
+        userId,
         categoryId: budget.categoryId,
         type: transactionType,
         date: {
@@ -226,7 +230,7 @@ export class BudgetService {
     }
 
     const existingBudget = await this.prisma.budget.findUnique({
-      where: { id },
+      where: { id, userId },
       select: this.budgetSelect,
     });
 
@@ -236,7 +240,7 @@ export class BudgetService {
 
     try {
       const updatedBudget = await this.prisma.budget.update({
-        where: { id },
+        where: { id, userId },
         data: {
           amount: budgetData.amount,
           categoryId: budgetData.categoryId,
@@ -308,7 +312,7 @@ export class BudgetService {
       return 0;
     }
 
-    return this.calculateSpentAmount(budget);
+    return this.calculateSpentAmount(budget, userId);
   }
 
   async getRemainingBudget(budgetId: string, userId: string): Promise<number> {
@@ -317,7 +321,7 @@ export class BudgetService {
       return 0;
     }
 
-    const spent = await this.calculateSpentAmount(budget);
+    const spent = await this.calculateSpentAmount(budget, userId);
     return budget.amount - spent;
   }
 
@@ -330,7 +334,7 @@ export class BudgetService {
       return null;
     }
 
-    const spent = await this.calculateSpentAmount(budget);
+    const spent = await this.calculateSpentAmount(budget, userId);
     const remaining = budget.amount - spent;
     const utilizationPercentage =
       budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
@@ -353,6 +357,7 @@ export class BudgetService {
     const transactionType = this.getTransactionTypeForBudget(budget.type);
     const transactions = await this.prisma.transaction.findMany({
       where: {
+        userId,
         categoryId: budget.categoryId,
         type: transactionType,
         date: {
@@ -415,7 +420,7 @@ export class BudgetService {
 
     const [transactions, spent] = await Promise.all([
       this.getTransactionsForBudget(budgetId, userId),
-      this.calculateSpentAmount(budget),
+      this.calculateSpentAmount(budget, userId),
     ]);
     const remaining = budget.amount - spent;
     const utilizationPercentage =
@@ -443,7 +448,7 @@ export class BudgetService {
     const results = await Promise.all(
       budgets.map(async (budget) => {
         const mapped = this.mapBudget(budget);
-        const spent = await this.calculateSpentAmount(mapped);
+        const spent = await this.calculateSpentAmount(mapped, userId);
         const remaining = mapped.amount - spent;
         const utilizationPercentage =
           mapped.amount > 0 ? (spent / mapped.amount) * 100 : 0;
