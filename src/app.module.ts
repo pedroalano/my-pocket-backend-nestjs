@@ -8,6 +8,7 @@ import { TransactionsModule } from './modules/transactions/transactions.module';
 import { BudgetModule } from './modules/budgets/budget.module';
 import { AuthsModule } from './modules/auths/auths.module';
 import { SharedModule } from './modules/shared';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { SharedModule } from './modules/shared';
     TransactionsModule,
     BudgetModule,
     AuthsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
