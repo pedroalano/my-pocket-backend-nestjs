@@ -24,6 +24,7 @@ type TransactionRecord = {
   type: TransactionType;
   date: Date;
   description: string | null;
+  userId: string;
 };
 
 const stripUndefined = <T extends Record<string, any>>(value: T) =>
@@ -118,12 +119,17 @@ const createPrismaMock = () => {
         const { userId: _, ...budgetWithoutUserId } = nextBudget;
         return budgetWithoutUserId;
       }),
-      update: jest.fn(({ where: { id }, data }) => {
-        const index = budgets.findIndex((budget) => budget.id === id);
-        if (index === -1) {
+      update: jest.fn(({ where, data }) => {
+        const { id, userId } = where;
+        const budget = budgets.find((budget) => budget.id === id);
+        if (!budget) {
           return null;
         }
-        // Note: Real service doesn't check userId in update where clause (potential bug)
+        // Check userId to ensure user can only update their own budgets
+        if (userId && budget.userId !== userId) {
+          return null;
+        }
+        const index = budgets.findIndex((budget) => budget.id === id);
         const payload = stripUndefined(data) as Partial<BudgetRecord>;
         const updated = {
           ...budgets[index],
@@ -157,10 +163,13 @@ const createPrismaMock = () => {
         if (!where) {
           return transactions;
         }
-        const { categoryId, type, date } = where;
+        const { userId, categoryId, type, date } = where;
         const gte = date?.gte as Date | undefined;
         const lt = date?.lt as Date | undefined;
         return transactions.filter((transaction) => {
+          if (userId && transaction.userId !== userId) {
+            return false;
+          }
           if (categoryId && transaction.categoryId !== categoryId) {
             return false;
           }
@@ -177,11 +186,14 @@ const createPrismaMock = () => {
         });
       }),
       aggregate: jest.fn(({ where }) => {
-        const { categoryId, type, date } = where;
+        const { userId, categoryId, type, date } = where;
         const gte = date?.gte as Date | undefined;
         const lt = date?.lt as Date | undefined;
         const sum = transactions
           .filter((transaction) => {
+            if (userId && transaction.userId !== userId) {
+              return false;
+            }
             if (categoryId && transaction.categoryId !== categoryId) {
               return false;
             }
@@ -554,6 +566,8 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
+          userId,
+          userId,
         },
         {
           id: 't2',
@@ -562,6 +576,8 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-20T00:00:00.000Z'),
           description: 'Transaction 2',
+          userId,
+          userId,
         },
         {
           id: 't3',
@@ -570,6 +586,7 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-02-10T00:00:00.000Z'),
           description: 'Different month',
+          userId,
         },
         {
           id: 't4',
@@ -578,6 +595,7 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-10T00:00:00.000Z'),
           description: 'Different category',
+          userId,
         },
       ]);
     });
@@ -643,6 +661,8 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
+          userId,
+          userId,
         },
       ]);
     });
@@ -663,6 +683,8 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
+          userId,
+          userId,
         },
       ]);
 
@@ -703,6 +725,7 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
+          userId,
         },
       ]);
 
@@ -736,6 +759,7 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-02-15T00:00:00.000Z'),
           description: 'Transaction 1',
+          userId,
         },
       ]);
 
@@ -757,6 +781,7 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
+          userId,
         },
       ]);
 
@@ -856,6 +881,7 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-10T00:00:00.000Z'),
           description: 'Transaction 1',
+          userId,
         },
         {
           id: 't2',
@@ -864,6 +890,7 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-20T00:00:00.000Z'),
           description: 'Transaction 2',
+          userId,
         },
       ]);
     });
@@ -898,6 +925,7 @@ describe('BudgetService', () => {
             type: TransactionType.EXPENSE,
             date: '2026-01-10T00:00:00.000Z',
             description: 'Transaction 1',
+            userId,
           },
           {
             id: 't2',
@@ -906,6 +934,7 @@ describe('BudgetService', () => {
             type: TransactionType.EXPENSE,
             date: '2026-01-20T00:00:00.000Z',
             description: 'Transaction 2',
+            userId,
           },
         ],
         spent: 250,
@@ -1025,12 +1054,11 @@ describe('BudgetService', () => {
         otherUserId,
       );
 
-      // Note: Current service implementation doesn't properly check userId in update
-      // The findUnique before update doesn't filter by userId, so this actually succeeds
-      // TODO: This is a security issue that should be fixed in the service
-      // For now, test matches current behavior (update succeeds)
-      expect(result).not.toBeNull();
-      expect(result?.amount).toBe(700);
+      expect(result).toBeNull();
+
+      // Verify the original budget wasn't modified
+      const originalBudget = await service.getBudgetById(budget.id, userId);
+      expect(originalBudget?.amount).toBe(500);
     });
 
     it('should return null when user tries to delete another users budget', async () => {
@@ -1069,6 +1097,7 @@ describe('BudgetService', () => {
         type: TransactionType.EXPENSE,
         date: new Date('2026-01-15T00:00:00.000Z'),
         description: 'Transaction 1',
+        userId,
       });
 
       const spent = await service.getSpentAmount(budget.id, otherUserId);
@@ -1112,6 +1141,117 @@ describe('BudgetService', () => {
       );
 
       expect(result).toBeNull();
+    });
+
+    it('should not return other users transactions when getting transactions for a budget', async () => {
+      const createDto: CreateBudgetDto = {
+        amount: 500,
+        categoryId,
+        month: 1,
+        year: 2026,
+        type: BudgetType.EXPENSE,
+      };
+
+      const budget = await service.createBudget(createDto, userId);
+
+      prismaMock.__setTransactions([
+        {
+          id: 't1',
+          amount: 100,
+          categoryId,
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-15T00:00:00.000Z'),
+          description: 'User 1 transaction',
+          userId,
+        },
+        {
+          id: 't2',
+          amount: 200,
+          categoryId,
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-20T00:00:00.000Z'),
+          description: 'User 2 transaction',
+          userId: otherUserId,
+        },
+      ]);
+
+      const transactions = await service.getTransactionsForBudget(
+        budget.id,
+        userId,
+      );
+
+      expect(transactions).toHaveLength(1);
+      expect(transactions[0].description).toBe('User 1 transaction');
+      expect(transactions[0].amount).toBe(100);
+    });
+
+    it('should return empty array when other user tries to get transactions for a budget', async () => {
+      const createDto: CreateBudgetDto = {
+        amount: 500,
+        categoryId,
+        month: 1,
+        year: 2026,
+        type: BudgetType.EXPENSE,
+      };
+
+      const budget = await service.createBudget(createDto, userId);
+
+      prismaMock.__setTransactions([
+        {
+          id: 't1',
+          amount: 100,
+          categoryId,
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-15T00:00:00.000Z'),
+          description: 'User 1 transaction',
+          userId,
+        },
+      ]);
+
+      const transactions = await service.getTransactionsForBudget(
+        budget.id,
+        otherUserId,
+      );
+
+      expect(transactions).toHaveLength(0);
+    });
+
+    it('should spend amount only include current users transactions', async () => {
+      const createDto: CreateBudgetDto = {
+        amount: 500,
+        categoryId,
+        month: 1,
+        year: 2026,
+        type: BudgetType.EXPENSE,
+      };
+
+      const budget = await service.createBudget(createDto, userId);
+
+      prismaMock.__setTransactions([
+        {
+          id: 't1',
+          amount: 100,
+          categoryId,
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-15T00:00:00.000Z'),
+          description: 'User 1 transaction',
+          userId,
+        },
+        {
+          id: 't2',
+          amount: 200,
+          categoryId,
+          type: TransactionType.EXPENSE,
+          date: new Date('2026-01-20T00:00:00.000Z'),
+          description: 'User 2 transaction',
+          userId: otherUserId,
+        },
+      ]);
+
+      const spent = await service.getSpentAmount(budget.id, userId);
+
+      // Should only count the 100 amount, not the 200 from other user
+      expect(spent).toBe(100);
     });
   });
 });

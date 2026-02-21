@@ -59,7 +59,16 @@ const createPrismaMock = () => {
         store.push(transaction);
         return transaction;
       }),
-      update: jest.fn(({ where: { id }, data }) => {
+      update: jest.fn(({ where, data }) => {
+        const { id, userId } = where;
+        const transaction = store.find((t) => t.id === id);
+        if (!transaction) {
+          return null;
+        }
+        // Check userId to ensure user can only update their own transactions
+        if (userId && transaction.userId !== userId) {
+          return null;
+        }
         const index = store.findIndex((transaction) => transaction.id === id);
         const cleanedData = stripUndefined(data) as Partial<TransactionRecord>;
         const updated = {
@@ -472,6 +481,28 @@ describe('TransactionsService', () => {
         throw new Error('Expected updated transaction to be defined');
       }
       expect(updated.categoryId).toBe(otherCategoryId);
+    });
+
+    it('should return null when user tries to update another users transaction', async () => {
+      const updateDto: UpdateTransactionDto = {
+        amount: 5000,
+      };
+
+      const [existing] = await service.getAllTransactions(userId);
+      const result = await service.updateTransaction(
+        existing.id,
+        updateDto,
+        otherUserId,
+      );
+
+      expect(result).toBeNull();
+
+      // Verify the original transaction wasn't modified
+      const originalTransaction = await service.getTransactionById(
+        existing.id,
+        userId,
+      );
+      expect(originalTransaction?.amount).toBe(1000);
     });
   });
 

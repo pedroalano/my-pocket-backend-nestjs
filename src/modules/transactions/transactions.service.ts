@@ -136,7 +136,7 @@ export class TransactionsService {
     }
 
     const existingTransaction = await this.prisma.transaction.findUnique({
-      where: { id },
+      where: { id, userId },
       select: this.transactionSelect,
     });
 
@@ -145,7 +145,7 @@ export class TransactionsService {
     }
 
     const updatedTransaction = await this.prisma.transaction.update({
-      where: { id },
+      where: { id, userId },
       data: {
         amount: updateTransactionDto.amount,
         type:
