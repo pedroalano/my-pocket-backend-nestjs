@@ -20,6 +20,7 @@ describe('DashboardController', () => {
   beforeEach(async () => {
     const mockDashboardService = {
       getMonthlySummary: jest.fn(),
+      getBudgetVsActual: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -158,6 +159,61 @@ describe('DashboardController', () => {
       await controller.getMonthlySummary(mockAuthenticatedRequest, 6, 2026);
 
       expect(service.getMonthlySummary).toHaveBeenCalledWith(
+        mockUserId,
+        6,
+        2026,
+      );
+    });
+  });
+
+  describe('getBudgetVsActual', () => {
+    it('should return budget vs actual comparison for valid month and year', async () => {
+      const expectedResult = [
+        {
+          category: { id: 'cat-1', name: 'Food', type: 'EXPENSE' },
+          budgetAmount: 1000,
+          actualAmount: 500,
+          difference: 500,
+          percentageUsed: 50,
+        },
+      ];
+
+      jest
+        .spyOn(service, 'getBudgetVsActual')
+        .mockResolvedValue(expectedResult as any);
+
+      const result = await controller.getBudgetVsActual(
+        mockAuthenticatedRequest,
+        2,
+        2026,
+      );
+
+      expect(result).toEqual(expectedResult);
+      expect(service.getBudgetVsActual).toHaveBeenCalledWith(
+        mockUserId,
+        2,
+        2026,
+      );
+    });
+
+    it('should throw BadRequestException for invalid month (0)', async () => {
+      await expect(
+        controller.getBudgetVsActual(mockAuthenticatedRequest, 0, 2026),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for invalid month (13)', async () => {
+      await expect(
+        controller.getBudgetVsActual(mockAuthenticatedRequest, 13, 2026),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should use userId from authenticated request', async () => {
+      jest.spyOn(service, 'getBudgetVsActual').mockResolvedValue([]);
+
+      await controller.getBudgetVsActual(mockAuthenticatedRequest, 6, 2026);
+
+      expect(service.getBudgetVsActual).toHaveBeenCalledWith(
         mockUserId,
         6,
         2026,

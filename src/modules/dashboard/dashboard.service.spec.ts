@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { TransactionType } from '@prisma/client';
+import { CategoryType, TransactionType } from '@prisma/client';
 import { DashboardService } from './dashboard.service';
 import { PrismaService } from '../shared/prisma.service';
 
@@ -11,6 +11,9 @@ describe('DashboardService', () => {
 
   beforeEach(async () => {
     const mockPrismaService = {
+      budget: {
+        findMany: jest.fn(),
+      },
       transaction: {
         findMany: jest.fn(),
       },
@@ -176,6 +179,124 @@ describe('DashboardService', () => {
 
       expect(result.balance).toBe(result.totalIncome - result.totalExpense);
       expect(result.balance).toBe(3000);
+    });
+  });
+
+  describe('getBudgetVsActual', () => {
+    it('should return comparison for budgets and categories without budgets', async () => {
+      const budgets = [
+        {
+          amount: 1000,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        },
+        {
+          amount: 500,
+          categoryId: 'cat-2',
+          category: { id: 'cat-2', name: 'Rent', type: CategoryType.EXPENSE },
+        },
+      ];
+
+      const transactions = [
+        {
+          amount: 200,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        },
+        {
+          amount: 300,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        },
+        {
+          amount: 400,
+          categoryId: 'cat-3',
+          category: { id: 'cat-3', name: 'Travel', type: CategoryType.EXPENSE },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.budget, 'findMany')
+        .mockResolvedValue(budgets as any);
+      jest
+        .spyOn(prismaService.transaction, 'findMany')
+        .mockResolvedValue(transactions as any);
+
+      const result = await service.getBudgetVsActual(mockUserId, 2, 2026);
+
+      expect(result).toHaveLength(3);
+
+      const food = result.find((item) => item.category.id === 'cat-1');
+      expect(food).toEqual({
+        category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        budgetAmount: 1000,
+        actualAmount: 500,
+        difference: 500,
+        percentageUsed: 50,
+      });
+
+      const rent = result.find((item) => item.category.id === 'cat-2');
+      expect(rent).toEqual({
+        category: { id: 'cat-2', name: 'Rent', type: CategoryType.EXPENSE },
+        budgetAmount: 500,
+        actualAmount: 0,
+        difference: 500,
+        percentageUsed: 0,
+      });
+
+      const travel = result.find((item) => item.category.id === 'cat-3');
+      expect(travel).toEqual({
+        category: { id: 'cat-3', name: 'Travel', type: CategoryType.EXPENSE },
+        budgetAmount: 0,
+        actualAmount: 400,
+        difference: -400,
+        percentageUsed: 100,
+      });
+
+      expect(prismaService.budget.findMany).toHaveBeenCalledWith({
+        where: { userId: mockUserId, month: 2, year: 2026 },
+        select: {
+          amount: true,
+          categoryId: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+        },
+      });
+
+      expect(prismaService.transaction.findMany).toHaveBeenCalledWith({
+        where: {
+          userId: mockUserId,
+          date: {
+            gte: new Date(Date.UTC(2026, 1, 1, 0, 0, 0, 0)),
+            lt: new Date(Date.UTC(2026, 2, 1, 0, 0, 0, 0)),
+          },
+        },
+        select: {
+          amount: true,
+          categoryId: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+            },
+          },
+        },
+      });
+    });
+
+    it('should return empty list when no budgets or transactions exist', async () => {
+      jest.spyOn(prismaService.budget, 'findMany').mockResolvedValue([]);
+      jest.spyOn(prismaService.transaction, 'findMany').mockResolvedValue([]);
+
+      const result = await service.getBudgetVsActual(mockUserId, 1, 2026);
+
+      expect(result).toEqual([]);
     });
   });
 });
