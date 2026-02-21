@@ -26,9 +26,10 @@ A secure backend API for personal finance management built with NestJS, featurin
 - ✅ PostgreSQL database with Prisma ORM
 - ✅ Categories, Transactions, and Budgets management
 - ✅ Budget analytics and spending tracking
+- ✅ Strict per-user data isolation (userId derived from JWT)
 - ✅ Comprehensive validation using DTOs
 - ✅ Global exception handling
-- ✅ 56+ unit tests with good coverage
+- ✅ 80+ unit tests with good coverage
 - ❌ Refresh tokens (out of scope)
 - ❌ Role-based authorization (future)
 
@@ -206,7 +207,7 @@ Authorization: Bearer <your-jwt-token>
 
 ## 🧪 Testing
 
-The project includes **56+ unit tests** covering all services:
+The project includes **80+ unit tests** covering all services:
 
 ```bash
 # Run all tests
@@ -222,8 +223,8 @@ npm run test:cov
 **Test Coverage:**
 
 - CategoriesService: 6 tests
-- TransactionsService: 19 tests
-- BudgetService: 30 tests (includes complex analytics and validation)
+- TransactionsService: 20+ tests
+- BudgetService: 40+ tests (includes complex analytics and validation)
 - AuthsService: Unit tests for registration and login
 - E2E tests: Basic integration test
 
