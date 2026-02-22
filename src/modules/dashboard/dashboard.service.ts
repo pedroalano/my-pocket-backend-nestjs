@@ -4,6 +4,7 @@ import { PrismaService } from '../shared/prisma.service';
 import { BudgetVsActualDto } from './dto/budget-vs-actual.dto';
 import { MonthlySummaryDto } from './dto/monthly-summary.dto';
 import { CategoryBreakdownDto } from './dto/category-breakdown.dto';
+import { TopExpenseDto } from './dto/top-expenses.dto';
 
 @Injectable()
 export class DashboardService {
@@ -248,5 +249,48 @@ export class DashboardService {
     });
 
     return results;
+  }
+
+  async getTopExpenses(
+    userId: string,
+    month: number,
+    year: number,
+    limit: number = 10,
+  ): Promise<TopExpenseDto[]> {
+    const { start, end } = this.getMonthRange(month, year);
+
+    const transactions = await this.prisma.transaction.findMany({
+      where: {
+        userId,
+        type: TransactionType.EXPENSE,
+        date: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: {
+        id: true,
+        description: true,
+        date: true,
+        amount: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+          },
+        },
+      },
+      orderBy: [{ amount: 'desc' }, { date: 'desc' }],
+      take: limit,
+    });
+
+    return transactions.map((transaction) => ({
+      id: transaction.id,
+      description: transaction.description,
+      date: transaction.date.toISOString(),
+      amount: Number(transaction.amount),
+      category: transaction.category,
+    }));
   }
 }

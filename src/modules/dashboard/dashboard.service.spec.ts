@@ -507,4 +507,274 @@ describe('DashboardService', () => {
       expect(callArgs.where.userId).toBe(differentUserId);
     });
   });
+
+  describe('getTopExpenses', () => {
+    it('should return top expenses sorted by amount descending then date descending', async () => {
+      const transactions = [
+        {
+          id: 'tx-1',
+          description: 'Rent',
+          date: new Date('2026-03-01'),
+          amount: 1500,
+          categoryId: 'cat-1',
+          category: {
+            id: 'cat-1',
+            name: 'Housing',
+            type: CategoryType.EXPENSE,
+          },
+        },
+        {
+          id: 'tx-2',
+          description: 'Groceries',
+          date: new Date('2026-03-15'),
+          amount: 300,
+          categoryId: 'cat-2',
+          category: { id: 'cat-2', name: 'Food', type: CategoryType.EXPENSE },
+        },
+        {
+          id: 'tx-3',
+          description: 'Dining',
+          date: new Date('2026-03-20'),
+          amount: 200,
+          categoryId: 'cat-2',
+          category: { id: 'cat-2', name: 'Food', type: CategoryType.EXPENSE },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.transaction, 'findMany')
+        .mockResolvedValue(transactions as any);
+
+      const result = await service.getTopExpenses(mockUserId, 3, 2026, 10);
+
+      expect(result).toHaveLength(3);
+      expect(result[0]).toEqual({
+        id: 'tx-1',
+        description: 'Rent',
+        date: '2026-03-01T00:00:00.000Z',
+        amount: 1500,
+        category: { id: 'cat-1', name: 'Housing', type: CategoryType.EXPENSE },
+      });
+      expect(result[1]).toEqual({
+        id: 'tx-2',
+        description: 'Groceries',
+        date: '2026-03-15T00:00:00.000Z',
+        amount: 300,
+        category: { id: 'cat-2', name: 'Food', type: CategoryType.EXPENSE },
+      });
+    });
+
+    it('should return empty array when no transactions exist', async () => {
+      jest.spyOn(prismaService.transaction, 'findMany').mockResolvedValue([]);
+
+      const result = await service.getTopExpenses(mockUserId, 4, 2026, 10);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should apply limit correctly', async () => {
+      const transactions = [
+        {
+          id: 'tx-1',
+          description: 'Item 1',
+          date: new Date('2026-05-01'),
+          amount: 500,
+          categoryId: 'cat-1',
+          category: {
+            id: 'cat-1',
+            name: 'Shopping',
+            type: CategoryType.EXPENSE,
+          },
+        },
+        {
+          id: 'tx-2',
+          description: 'Item 2',
+          date: new Date('2026-05-02'),
+          amount: 400,
+          categoryId: 'cat-1',
+          category: {
+            id: 'cat-1',
+            name: 'Shopping',
+            type: CategoryType.EXPENSE,
+          },
+        },
+        {
+          id: 'tx-3',
+          description: 'Item 3',
+          date: new Date('2026-05-03'),
+          amount: 300,
+          categoryId: 'cat-1',
+          category: {
+            id: 'cat-1',
+            name: 'Shopping',
+            type: CategoryType.EXPENSE,
+          },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.transaction, 'findMany')
+        .mockResolvedValue(transactions as any);
+
+      const result = await service.getTopExpenses(mockUserId, 5, 2026, 2);
+
+      expect(result).toHaveLength(3); // Mock returns all, Prisma handles limit
+      expect(prismaService.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 2,
+        }),
+      );
+    });
+
+    it('should filter only EXPENSE transactions', async () => {
+      jest.spyOn(prismaService.transaction, 'findMany').mockResolvedValue([]);
+
+      await service.getTopExpenses(mockUserId, 6, 2026, 10);
+
+      const callArgs = (prismaService.transaction.findMany as jest.Mock).mock
+        .calls[0][0];
+      expect(callArgs.where.type).toBe(TransactionType.EXPENSE);
+    });
+
+    it('should filter by month and year range', async () => {
+      jest.spyOn(prismaService.transaction, 'findMany').mockResolvedValue([]);
+
+      await service.getTopExpenses(mockUserId, 7, 2026, 10);
+
+      const callArgs = (prismaService.transaction.findMany as jest.Mock).mock
+        .calls[0][0];
+      expect(callArgs.where.date.gte).toEqual(
+        new Date(Date.UTC(2026, 6, 1, 0, 0, 0, 0)),
+      );
+      expect(callArgs.where.date.lt).toEqual(
+        new Date(Date.UTC(2026, 7, 1, 0, 0, 0, 0)),
+      );
+    });
+
+    it('should ensure user isolation by filtering on userId', async () => {
+      jest.spyOn(prismaService.transaction, 'findMany').mockResolvedValue([]);
+
+      const differentUserId = 'user-456';
+      await service.getTopExpenses(differentUserId, 8, 2026, 10);
+
+      const callArgs = (prismaService.transaction.findMany as jest.Mock).mock
+        .calls[0][0];
+      expect(callArgs.where.userId).toBe(differentUserId);
+    });
+
+    it('should convert Decimal amounts to numbers', async () => {
+      const transactions = [
+        {
+          id: 'tx-1',
+          description: 'Test',
+          date: new Date('2026-09-01'),
+          amount: 250,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Test', type: CategoryType.EXPENSE },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.transaction, 'findMany')
+        .mockResolvedValue(transactions as any);
+
+      const result = await service.getTopExpenses(mockUserId, 9, 2026, 10);
+
+      expect(result[0].amount).toBe(250);
+      expect(typeof result[0].amount).toBe('number');
+    });
+
+    it('should convert ISO date strings correctly', async () => {
+      const transactions = [
+        {
+          id: 'tx-1',
+          description: 'Test',
+          date: new Date('2026-10-15'),
+          amount: 100,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Test', type: CategoryType.EXPENSE },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.transaction, 'findMany')
+        .mockResolvedValue(transactions as any);
+
+      const result = await service.getTopExpenses(mockUserId, 10, 2026, 10);
+
+      expect(result[0].date).toBe('2026-10-15T00:00:00.000Z');
+    });
+
+    it('should handle null description field', async () => {
+      const transactions = [
+        {
+          id: 'tx-1',
+          description: null,
+          date: new Date('2026-11-01'),
+          amount: 50,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Test', type: CategoryType.EXPENSE },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.transaction, 'findMany')
+        .mockResolvedValue(transactions as any);
+
+      const result = await service.getTopExpenses(mockUserId, 11, 2026, 10);
+
+      expect(result[0].description).toBeNull();
+    });
+
+    it('should sort by date descending as secondary sort for same amount', async () => {
+      const transactions = [
+        {
+          id: 'tx-1',
+          description: 'First',
+          date: new Date('2026-12-05'),
+          amount: 500,
+          categoryId: 'cat-1',
+          category: {
+            id: 'cat-1',
+            name: 'Category',
+            type: CategoryType.EXPENSE,
+          },
+        },
+        {
+          id: 'tx-2',
+          description: 'Second',
+          date: new Date('2026-12-10'),
+          amount: 500,
+          categoryId: 'cat-1',
+          category: {
+            id: 'cat-1',
+            name: 'Category',
+            type: CategoryType.EXPENSE,
+          },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.transaction, 'findMany')
+        .mockResolvedValue(transactions as any);
+
+      await service.getTopExpenses(mockUserId, 12, 2026, 10);
+
+      expect(prismaService.transaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: [{ amount: 'desc' }, { date: 'desc' }],
+        }),
+      );
+    });
+
+    it('should use default limit of 10 when not provided', async () => {
+      jest.spyOn(prismaService.transaction, 'findMany').mockResolvedValue([]);
+
+      await service.getTopExpenses(mockUserId, 1, 2026);
+
+      const callArgs = (prismaService.transaction.findMany as jest.Mock).mock
+        .calls[0][0];
+      expect(callArgs.take).toBe(10);
+    });
+  });
 });
