@@ -3,6 +3,7 @@ import { CategoryType, TransactionType } from '@prisma/client';
 import { PrismaService } from '../shared/prisma.service';
 import { BudgetVsActualDto } from './dto/budget-vs-actual.dto';
 import { MonthlySummaryDto } from './dto/monthly-summary.dto';
+import { CategoryBreakdownDto } from './dto/category-breakdown.dto';
 
 @Injectable()
 export class DashboardService {
@@ -170,6 +171,79 @@ export class DashboardService {
         actualAmount,
         difference,
         percentageUsed,
+      });
+    });
+
+    return results;
+  }
+
+  async getCategoryBreakdown(
+    userId: string,
+    month: number,
+    year: number,
+  ): Promise<CategoryBreakdownDto[]> {
+    const { start, end } = this.getMonthRange(month, year);
+
+    const transactions = await this.prisma.transaction.findMany({
+      where: {
+        userId,
+        type: TransactionType.EXPENSE,
+        date: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: {
+        amount: true,
+        categoryId: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+          },
+        },
+      },
+    });
+
+    // Group transactions by category
+    const categoryMap = new Map<
+      string,
+      {
+        category: { id: string; name: string; type: CategoryType };
+        totalAmount: number;
+      }
+    >();
+
+    let grandTotal = 0;
+
+    transactions.forEach((transaction) => {
+      const amount = Number(transaction.amount);
+      grandTotal += amount;
+
+      const existing = categoryMap.get(transaction.categoryId);
+
+      if (existing) {
+        existing.totalAmount += amount;
+      } else {
+        categoryMap.set(transaction.categoryId, {
+          category: transaction.category,
+          totalAmount: amount,
+        });
+      }
+    });
+
+    // Convert map to array and calculate percentages
+    const results: CategoryBreakdownDto[] = [];
+
+    categoryMap.forEach((entry) => {
+      const percentage =
+        grandTotal === 0 ? 0 : (entry.totalAmount / grandTotal) * 100;
+
+      results.push({
+        category: entry.category,
+        totalAmount: entry.totalAmount,
+        percentage,
       });
     });
 

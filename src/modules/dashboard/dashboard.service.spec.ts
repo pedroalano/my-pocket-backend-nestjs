@@ -299,4 +299,212 @@ describe('DashboardService', () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe('getCategoryBreakdown', () => {
+    it('should return categories grouped with correct amounts and percentages', async () => {
+      const transactions = [
+        {
+          amount: 500,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        },
+        {
+          amount: 300,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        },
+        {
+          amount: 200,
+          categoryId: 'cat-2',
+          category: {
+            id: 'cat-2',
+            name: 'Transport',
+            type: CategoryType.EXPENSE,
+          },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.transaction, 'findMany')
+        .mockResolvedValue(transactions as any);
+
+      const result = await service.getCategoryBreakdown(mockUserId, 3, 2026);
+
+      expect(result).toHaveLength(2);
+
+      const food = result.find((item) => item.category.id === 'cat-1');
+      expect(food).toEqual({
+        category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        totalAmount: 800,
+        percentage: 80,
+      });
+
+      const transport = result.find((item) => item.category.id === 'cat-2');
+      expect(transport).toEqual({
+        category: {
+          id: 'cat-2',
+          name: 'Transport',
+          type: CategoryType.EXPENSE,
+        },
+        totalAmount: 200,
+        percentage: 20,
+      });
+    });
+
+    it('should return empty array when no transactions exist', async () => {
+      jest.spyOn(prismaService.transaction, 'findMany').mockResolvedValue([]);
+
+      const result = await service.getCategoryBreakdown(mockUserId, 4, 2026);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should filter only EXPENSE transactions', async () => {
+      jest.spyOn(prismaService.transaction, 'findMany').mockResolvedValue([]);
+
+      await service.getCategoryBreakdown(mockUserId, 2, 2026);
+
+      const callArgs = (prismaService.transaction.findMany as jest.Mock).mock
+        .calls[0][0];
+      expect(callArgs.where.type).toBe(TransactionType.EXPENSE);
+      expect(callArgs.where.userId).toBe(mockUserId);
+    });
+
+    it('should filter transactions by month and year range', async () => {
+      jest.spyOn(prismaService.transaction, 'findMany').mockResolvedValue([]);
+
+      await service.getCategoryBreakdown(mockUserId, 5, 2026);
+
+      const callArgs = (prismaService.transaction.findMany as jest.Mock).mock
+        .calls[0][0];
+      expect(callArgs.where.date.gte).toEqual(
+        new Date(Date.UTC(2026, 4, 1, 0, 0, 0, 0)),
+      );
+      expect(callArgs.where.date.lt).toEqual(
+        new Date(Date.UTC(2026, 5, 1, 0, 0, 0, 0)),
+      );
+    });
+
+    it('should calculate percentage as 0 when grand total is 0', async () => {
+      jest.spyOn(prismaService.transaction, 'findMany').mockResolvedValue([]);
+
+      const result = await service.getCategoryBreakdown(mockUserId, 1, 2026);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should handle single category', async () => {
+      const transactions = [
+        {
+          amount: 500,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        },
+        {
+          amount: 250,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.transaction, 'findMany')
+        .mockResolvedValue(transactions as any);
+
+      const result = await service.getCategoryBreakdown(mockUserId, 6, 2026);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        totalAmount: 750,
+        percentage: 100,
+      });
+    });
+
+    it('should group multiple transactions from same category correctly', async () => {
+      const transactions = [
+        {
+          amount: 100,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        },
+        {
+          amount: 150,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        },
+        {
+          amount: 200,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.transaction, 'findMany')
+        .mockResolvedValue(transactions as any);
+
+      const result = await service.getCategoryBreakdown(mockUserId, 7, 2026);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].totalAmount).toBe(450);
+      expect(result[0].percentage).toBe(100);
+    });
+
+    it('should calculate correct percentages with multiple categories', async () => {
+      const transactions = [
+        {
+          amount: 600,
+          categoryId: 'cat-1',
+          category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        },
+        {
+          amount: 300,
+          categoryId: 'cat-2',
+          category: {
+            id: 'cat-2',
+            name: 'Transport',
+            type: CategoryType.EXPENSE,
+          },
+        },
+        {
+          amount: 100,
+          categoryId: 'cat-3',
+          category: {
+            id: 'cat-3',
+            name: 'Entertainment',
+            type: CategoryType.EXPENSE,
+          },
+        },
+      ];
+
+      jest
+        .spyOn(prismaService.transaction, 'findMany')
+        .mockResolvedValue(transactions as any);
+
+      const result = await service.getCategoryBreakdown(mockUserId, 8, 2026);
+
+      expect(result).toHaveLength(3);
+      expect(result.find((r) => r.category.id === 'cat-1')?.percentage).toBe(
+        60,
+      );
+      expect(result.find((r) => r.category.id === 'cat-2')?.percentage).toBe(
+        30,
+      );
+      expect(result.find((r) => r.category.id === 'cat-3')?.percentage).toBe(
+        10,
+      );
+    });
+
+    it('should ensure user isolation by filtering on userId', async () => {
+      jest.spyOn(prismaService.transaction, 'findMany').mockResolvedValue([]);
+
+      const differentUserId = 'user-456';
+      await service.getCategoryBreakdown(differentUserId, 2, 2026);
+
+      const callArgs = (prismaService.transaction.findMany as jest.Mock).mock
+        .calls[0][0];
+      expect(callArgs.where.userId).toBe(differentUserId);
+    });
+  });
 });

@@ -21,6 +21,7 @@ describe('DashboardController', () => {
     const mockDashboardService = {
       getMonthlySummary: jest.fn(),
       getBudgetVsActual: jest.fn(),
+      getCategoryBreakdown: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -214,6 +215,140 @@ describe('DashboardController', () => {
       await controller.getBudgetVsActual(mockAuthenticatedRequest, 6, 2026);
 
       expect(service.getBudgetVsActual).toHaveBeenCalledWith(
+        mockUserId,
+        6,
+        2026,
+      );
+    });
+  });
+
+  describe('getCategoryBreakdown', () => {
+    it('should return category breakdown for valid month and year', async () => {
+      const expectedResult = [
+        {
+          category: { id: 'cat-1', name: 'Food', type: 'EXPENSE' },
+          totalAmount: 500,
+          percentage: 50,
+        },
+        {
+          category: { id: 'cat-2', name: 'Transport', type: 'EXPENSE' },
+          totalAmount: 500,
+          percentage: 50,
+        },
+      ];
+
+      jest
+        .spyOn(service, 'getCategoryBreakdown')
+        .mockResolvedValue(expectedResult as any);
+
+      const result = await controller.getCategoryBreakdown(
+        mockAuthenticatedRequest,
+        3,
+        2026,
+      );
+
+      expect(result).toEqual(expectedResult);
+      expect(service.getCategoryBreakdown).toHaveBeenCalledWith(
+        mockUserId,
+        3,
+        2026,
+      );
+    });
+
+    it('should throw BadRequestException for invalid month (0)', async () => {
+      await expect(
+        controller.getCategoryBreakdown(mockAuthenticatedRequest, 0, 2026),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException for invalid month (13)', async () => {
+      await expect(
+        controller.getCategoryBreakdown(mockAuthenticatedRequest, 13, 2026),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should return empty array when no expenses exist', async () => {
+      jest.spyOn(service, 'getCategoryBreakdown').mockResolvedValue([]);
+
+      const result = await controller.getCategoryBreakdown(
+        mockAuthenticatedRequest,
+        4,
+        2026,
+      );
+
+      expect(result).toEqual([]);
+      expect(service.getCategoryBreakdown).toHaveBeenCalledWith(
+        mockUserId,
+        4,
+        2026,
+      );
+    });
+
+    it('should accept month 1 (January)', async () => {
+      const expectedResult = [
+        {
+          category: { id: 'cat-1', name: 'Food', type: 'EXPENSE' },
+          totalAmount: 1000,
+          percentage: 100,
+        },
+      ];
+
+      jest
+        .spyOn(service, 'getCategoryBreakdown')
+        .mockResolvedValue(expectedResult as any);
+
+      const result = await controller.getCategoryBreakdown(
+        mockAuthenticatedRequest,
+        1,
+        2026,
+      );
+
+      expect(result).toEqual(expectedResult);
+      expect(service.getCategoryBreakdown).toHaveBeenCalledWith(
+        mockUserId,
+        1,
+        2026,
+      );
+    });
+
+    it('should accept month 12 (December)', async () => {
+      const expectedResult = [
+        {
+          category: { id: 'cat-1', name: 'Food', type: 'EXPENSE' },
+          totalAmount: 750,
+          percentage: 75,
+        },
+        {
+          category: { id: 'cat-2', name: 'Transport', type: 'EXPENSE' },
+          totalAmount: 250,
+          percentage: 25,
+        },
+      ];
+
+      jest
+        .spyOn(service, 'getCategoryBreakdown')
+        .mockResolvedValue(expectedResult as any);
+
+      const result = await controller.getCategoryBreakdown(
+        mockAuthenticatedRequest,
+        12,
+        2026,
+      );
+
+      expect(result).toEqual(expectedResult);
+      expect(service.getCategoryBreakdown).toHaveBeenCalledWith(
+        mockUserId,
+        12,
+        2026,
+      );
+    });
+
+    it('should use userId from authenticated request', async () => {
+      jest.spyOn(service, 'getCategoryBreakdown').mockResolvedValue([]);
+
+      await controller.getCategoryBreakdown(mockAuthenticatedRequest, 6, 2026);
+
+      expect(service.getCategoryBreakdown).toHaveBeenCalledWith(
         mockUserId,
         6,
         2026,

@@ -12,6 +12,7 @@ import { JwtAuthGuard } from '../auths/jwt-auth.guard';
 import { DashboardService } from './dashboard.service';
 import { BudgetVsActualDto } from './dto/budget-vs-actual.dto';
 import { MonthlySummaryDto } from './dto/monthly-summary.dto';
+import { CategoryBreakdownDto } from './dto/category-breakdown.dto';
 
 @Controller('dashboard')
 export class DashboardController {
@@ -49,5 +50,18 @@ export class DashboardController {
 
     const userId = req.user.userId;
     return this.dashboardService.getBudgetVsActual(userId, month, year);
+  }
+
+  @Get('category-breakdown')
+  @UseGuards(JwtAuthGuard)
+  async getCategoryBreakdown(
+    @Req() req: AuthenticatedRequest,
+    @Query('month', ParseIntPipe) month: number,
+    @Query('year', ParseIntPipe) year: number,
+  ): Promise<CategoryBreakdownDto[]> {
+    this.validateMonth(month);
+
+    const userId = req.user.userId;
+    return this.dashboardService.getCategoryBreakdown(userId, month, year);
   }
 }
