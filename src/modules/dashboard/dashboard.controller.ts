@@ -13,6 +13,7 @@ import { DashboardService } from './dashboard.service';
 import { BudgetVsActualDto } from './dto/budget-vs-actual.dto';
 import { MonthlySummaryDto } from './dto/monthly-summary.dto';
 import { CategoryBreakdownDto } from './dto/category-breakdown.dto';
+import { TopExpenseDto } from './dto/top-expenses.dto';
 
 @Controller('dashboard')
 export class DashboardController {
@@ -22,6 +23,14 @@ export class DashboardController {
     if (month < 1 || month > 12) {
       throw new BadRequestException(
         'Invalid month. Month must be between 1 and 12.',
+      );
+    }
+  }
+
+  private validateLimit(limit: number): void {
+    if (limit < 1 || limit > 100) {
+      throw new BadRequestException(
+        'Invalid limit. Limit must be between 1 and 100.',
       );
     }
   }
@@ -63,5 +72,28 @@ export class DashboardController {
 
     const userId = req.user.userId;
     return this.dashboardService.getCategoryBreakdown(userId, month, year);
+  }
+
+  @Get('top-expenses')
+  @UseGuards(JwtAuthGuard)
+  async getTopExpenses(
+    @Req() req: AuthenticatedRequest,
+    @Query('month', ParseIntPipe) month: number,
+    @Query('year', ParseIntPipe) year: number,
+    @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
+  ): Promise<TopExpenseDto[]> {
+    this.validateMonth(month);
+
+    if (limit !== undefined) {
+      this.validateLimit(limit);
+    }
+
+    const userId = req.user.userId;
+    return this.dashboardService.getTopExpenses(
+      userId,
+      month,
+      year,
+      limit ?? 10,
+    );
   }
 }
