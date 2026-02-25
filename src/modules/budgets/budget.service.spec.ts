@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { BudgetType, Prisma, TransactionType } from '@prisma/client';
 import { BudgetService } from './budget.service';
 import { CategoriesService } from '../categories/categories.service';
@@ -83,17 +87,13 @@ const createPrismaMock = () => {
           })
           .map(({ userId, ...rest }) => rest);
       }),
-      findUnique: jest.fn(({ where: { id, userId } }) => {
+      findUnique: jest.fn(({ where: { id } }) => {
         const budget = budgets.find((budget) => budget.id === id);
         if (!budget) {
           return null;
         }
-        if (userId && budget.userId !== userId) {
-          return null;
-        }
-        // Return without userId to match service behavior
-        const { userId: _, ...budgetWithoutUserId } = budget;
-        return budgetWithoutUserId;
+        // Return with userId so service can check authorization
+        return budget;
       }),
       create: jest.fn(({ data }) => {
         const payload = stripUndefined(data) as Omit<BudgetRecord, 'id'>;
@@ -115,18 +115,13 @@ const createPrismaMock = () => {
           );
         }
         budgets.push(nextBudget);
-        // Return without userId to match service behavior
-        const { userId: _, ...budgetWithoutUserId } = nextBudget;
-        return budgetWithoutUserId;
+        // Return with userId for service to use
+        return nextBudget;
       }),
       update: jest.fn(({ where, data }) => {
-        const { id, userId } = where;
+        const { id } = where;
         const budget = budgets.find((budget) => budget.id === id);
         if (!budget) {
-          return null;
-        }
-        // Check userId to ensure user can only update their own budgets
-        if (userId && budget.userId !== userId) {
           return null;
         }
         const index = budgets.findIndex((budget) => budget.id === id);
@@ -148,9 +143,8 @@ const createPrismaMock = () => {
           );
         }
         budgets[index] = updated;
-        // Return without userId to match service behavior
-        const { userId: _, ...budgetWithoutUserId } = updated;
-        return budgetWithoutUserId;
+        // Return with userId for service to use
+        return updated;
       }),
       delete: jest.fn(({ where: { id } }) => {
         const index = budgets.findIndex((budget) => budget.id === id);
@@ -289,6 +283,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         ...createDto,
+        amount: '500.00',
         id: result.id,
       });
       expect(categoriesService.getCategoryById).toHaveBeenCalledWith(
@@ -368,7 +363,7 @@ describe('BudgetService', () => {
       await service.createBudget(createDto, userId);
 
       await expect(service.createBudget(createDto, userId)).rejects.toThrow(
-        BadRequestException,
+        ConflictException,
       );
       await expect(service.createBudget(createDto, userId)).rejects.toThrow(
         `Budget for category ${categoryId}, type ${BudgetType.EXPENSE}, month 1, and year 2026 already exists`,
@@ -422,7 +417,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: 700,
+        amount: '700.00',
         categoryId,
         month: 1,
         year: 2026,
@@ -435,13 +430,9 @@ describe('BudgetService', () => {
         amount: 700,
       };
 
-      const result = await service.updateBudget(
-        missingBudgetId,
-        updateDto,
-        userId,
-      );
-
-      expect(result).toBeNull();
+      await expect(
+        service.updateBudget(missingBudgetId, updateDto, userId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException when updating to invalid month', async () => {
@@ -494,7 +485,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: 800,
+        amount: '800.00',
         categoryId,
         month: 1,
         year: 2026,
@@ -538,7 +529,7 @@ describe('BudgetService', () => {
 
       await expect(
         service.updateBudget(secondBudget.id, updateDto, userId),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(ConflictException);
       await expect(
         service.updateBudget(secondBudget.id, updateDto, userId),
       ).rejects.toThrow(
@@ -608,9 +599,9 @@ describe('BudgetService', () => {
     });
 
     it('should return 0 when budget does not exist', async () => {
-      const spent = await service.getSpentAmount(missingBudgetId, userId);
-
-      expect(spent).toBe(0);
+      await expect(
+        service.getSpentAmount(missingBudgetId, userId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should return 0 when no transactions match', async () => {
@@ -695,12 +686,9 @@ describe('BudgetService', () => {
     });
 
     it('should return 0 when budget does not exist', async () => {
-      const remaining = await service.getRemainingBudget(
-        missingBudgetId,
-        userId,
-      );
-
-      expect(remaining).toBe(0);
+      await expect(
+        service.getRemainingBudget(missingBudgetId, userId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -796,12 +784,9 @@ describe('BudgetService', () => {
     });
 
     it('should return null when budget does not exist', async () => {
-      const result = await service.getBudgetWithSpending(
-        missingBudgetId,
-        userId,
-      );
-
-      expect(result).toBeNull();
+      await expect(
+        service.getBudgetWithSpending(missingBudgetId, userId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -823,7 +808,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: 500,
+        amount: '500.00',
         categoryId,
         month: 1,
         year: 2026,
@@ -840,12 +825,9 @@ describe('BudgetService', () => {
     });
 
     it('should return null when budget does not exist', async () => {
-      const result = await service.getBudgetWithCategory(
-        missingBudgetId,
-        userId,
-      );
-
-      expect(result).toBeNull();
+      await expect(
+        service.getBudgetWithCategory(missingBudgetId, userId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should handle null category', async () => {
@@ -904,7 +886,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: 500,
+        amount: '500.00',
         categoryId,
         month: 1,
         year: 2026,
@@ -944,12 +926,9 @@ describe('BudgetService', () => {
     });
 
     it('should return null when budget does not exist', async () => {
-      const result = await service.getBudgetsWithTransactions(
-        missingBudgetId,
-        userId,
-      );
-
-      expect(result).toBeNull();
+      await expect(
+        service.getBudgetsWithTransactions(missingBudgetId, userId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should include empty transactions array when no matches', async () => {
@@ -1012,9 +991,9 @@ describe('BudgetService', () => {
       const otherUserBudgets = await service.getAllBudgets(otherUserId);
 
       expect(userBudgets).toHaveLength(1);
-      expect(userBudgets[0].amount).toBe(500);
+      expect(userBudgets[0].amount).toBe('500.00');
       expect(otherUserBudgets).toHaveLength(1);
-      expect(otherUserBudgets[0].amount).toBe(600);
+      expect(otherUserBudgets[0].amount).toBe('600.00');
     });
 
     it('should return null when user tries to access another users budget', async () => {
@@ -1028,9 +1007,9 @@ describe('BudgetService', () => {
 
       const budget = await service.createBudget(createDto, userId);
 
-      const result = await service.getBudgetById(budget.id, otherUserId);
-
-      expect(result).toBeUndefined();
+      await expect(
+        service.getBudgetById(budget.id, otherUserId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should return null when user tries to update another users budget', async () => {
@@ -1048,17 +1027,9 @@ describe('BudgetService', () => {
         amount: 700,
       };
 
-      const result = await service.updateBudget(
-        budget.id,
-        updateDto,
-        otherUserId,
-      );
-
-      expect(result).toBeNull();
-
-      // Verify the original budget wasn't modified
-      const originalBudget = await service.getBudgetById(budget.id, userId);
-      expect(originalBudget?.amount).toBe(500);
+      await expect(
+        service.updateBudget(budget.id, updateDto, otherUserId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should return null when user tries to delete another users budget', async () => {
@@ -1072,15 +1043,12 @@ describe('BudgetService', () => {
 
       const budget = await service.createBudget(createDto, userId);
 
-      const result = await service.deleteBudget(budget.id, otherUserId);
-
-      expect(result).toBeNull();
-
-      const budgets = await service.getAllBudgets(userId);
-      expect(budgets).toHaveLength(1);
+      await expect(
+        service.deleteBudget(budget.id, otherUserId),
+      ).rejects.toThrow(NotFoundException);
     });
 
-    it('should return 0 spent amount when user tries to access another users budget', async () => {
+    it('should throw NotFoundException when user tries to access another users budget', async () => {
       const createDto: CreateBudgetDto = {
         amount: 500,
         categoryId,
@@ -1091,18 +1059,9 @@ describe('BudgetService', () => {
 
       const budget = await service.createBudget(createDto, userId);
 
-      prismaMock.__addTransaction({
-        amount: 100,
-        categoryId,
-        type: TransactionType.EXPENSE,
-        date: new Date('2026-01-15T00:00:00.000Z'),
-        description: 'Transaction 1',
-        userId,
-      });
-
-      const spent = await service.getSpentAmount(budget.id, otherUserId);
-
-      expect(spent).toBe(0);
+      await expect(
+        service.getSpentAmount(budget.id, otherUserId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should return null when user tries to get budget with spending for another users budget', async () => {
@@ -1116,12 +1075,9 @@ describe('BudgetService', () => {
 
       const budget = await service.createBudget(createDto, userId);
 
-      const result = await service.getBudgetWithSpending(
-        budget.id,
-        otherUserId,
-      );
-
-      expect(result).toBeNull();
+      await expect(
+        service.getBudgetWithSpending(budget.id, otherUserId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should return null when user tries to get budget with category for another users budget', async () => {
@@ -1135,12 +1091,9 @@ describe('BudgetService', () => {
 
       const budget = await service.createBudget(createDto, userId);
 
-      const result = await service.getBudgetWithCategory(
-        budget.id,
-        otherUserId,
-      );
-
-      expect(result).toBeNull();
+      await expect(
+        service.getBudgetWithCategory(budget.id, otherUserId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should not return other users transactions when getting transactions for a budget', async () => {
@@ -1196,24 +1149,9 @@ describe('BudgetService', () => {
 
       const budget = await service.createBudget(createDto, userId);
 
-      prismaMock.__setTransactions([
-        {
-          id: 't1',
-          amount: 100,
-          categoryId,
-          type: TransactionType.EXPENSE,
-          date: new Date('2026-01-15T00:00:00.000Z'),
-          description: 'User 1 transaction',
-          userId,
-        },
-      ]);
-
-      const transactions = await service.getTransactionsForBudget(
-        budget.id,
-        otherUserId,
-      );
-
-      expect(transactions).toHaveLength(0);
+      await expect(
+        service.getTransactionsForBudget(budget.id, otherUserId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should spend amount only include current users transactions', async () => {

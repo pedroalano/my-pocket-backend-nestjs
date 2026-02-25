@@ -172,11 +172,9 @@ describe('TransactionsService', () => {
 
   describe('getTransactionById', () => {
     it('should return undefined for non-existent transaction', async () => {
-      const transaction = await service.getTransactionById(
-        missingTransactionId,
-        userId,
-      );
-      expect(transaction).toBeUndefined();
+      await expect(
+        service.getTransactionById(missingTransactionId, userId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should return the transaction if it exists and user is owner', async () => {
@@ -200,7 +198,7 @@ describe('TransactionsService', () => {
         throw new Error('Expected transaction to be defined');
       }
       expect(transaction?.id).toBe(created.id);
-      expect(transaction.amount).toBe(1000);
+      expect(transaction.amount).toBe('1000.00');
       expect(transaction.description).toBe('Monthly salary');
     });
 
@@ -218,12 +216,9 @@ describe('TransactionsService', () => {
       };
 
       const created = await service.createTransaction(createDto, userId);
-      const transaction = await service.getTransactionById(
-        created.id,
-        otherUserId,
-      );
-
-      expect(transaction).toBeUndefined();
+      await expect(
+        service.getTransactionById(created.id, otherUserId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -245,7 +240,7 @@ describe('TransactionsService', () => {
 
       expect(transaction).toBeDefined();
       expect(transaction.id).toBeDefined();
-      expect(transaction.amount).toBe(1000);
+      expect(transaction.amount).toBe('1000.00');
       expect(transaction.type).toBe(TransactionType.INCOME);
       expect(transaction.categoryId).toBe(categoryId);
       expect(transaction.date).toBe('2025-01-01T00:00:00.000Z');
@@ -313,7 +308,7 @@ describe('TransactionsService', () => {
       const allTransactions = await service.getAllTransactions(userId);
 
       expect(allTransactions.length).toBe(1);
-      expect(allTransactions[0].amount).toBe(1000);
+      expect(allTransactions[0].amount).toBe('1000.00');
     });
   });
 
@@ -339,12 +334,9 @@ describe('TransactionsService', () => {
         amount: 2000,
       };
 
-      const result = await service.updateTransaction(
-        missingTransactionId,
-        updateDto,
-        userId,
-      );
-      expect(result).toBeNull();
+      await expect(
+        service.updateTransaction(missingTransactionId, updateDto, userId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should update amount field', async () => {
@@ -363,7 +355,7 @@ describe('TransactionsService', () => {
       if (!updated) {
         throw new Error('Expected updated transaction to be defined');
       }
-      expect(updated.amount).toBe(2000);
+      expect(updated.amount).toBe('2000.00');
       expect(updated.description).toBe('Monthly salary');
       expect(updated.categoryId).toBe(categoryId);
     });
@@ -385,7 +377,7 @@ describe('TransactionsService', () => {
       if (!updated) {
         throw new Error('Expected updated transaction to be defined');
       }
-      expect(updated.amount).toBe(2000);
+      expect(updated.amount).toBe('2000.00');
       expect(updated.description).toBe('Bonus payment');
       expect(updated.type).toBe(TransactionType.EXPENSE);
       expect(updated.date).toBe('2025-01-01T00:00:00.000Z');
@@ -440,7 +432,7 @@ describe('TransactionsService', () => {
       if (!updated) {
         throw new Error('Expected updated transaction to be defined');
       }
-      expect(updated.amount).toBe(2000);
+      expect(updated.amount).toBe('2000.00');
       expect(
         (categoriesService.getCategoryById as jest.Mock).mock.calls.length,
       ).toBe(1); // Only called during create
@@ -489,20 +481,16 @@ describe('TransactionsService', () => {
       };
 
       const [existing] = await service.getAllTransactions(userId);
-      const result = await service.updateTransaction(
-        existing.id,
-        updateDto,
-        otherUserId,
-      );
-
-      expect(result).toBeNull();
+      await expect(
+        service.updateTransaction(existing.id, updateDto, otherUserId),
+      ).rejects.toThrow(NotFoundException);
 
       // Verify the original transaction wasn't modified
       const originalTransaction = await service.getTransactionById(
         existing.id,
         userId,
       );
-      expect(originalTransaction?.amount).toBe(1000);
+      expect(originalTransaction?.amount).toBe('1000.00');
     });
   });
 
@@ -524,11 +512,9 @@ describe('TransactionsService', () => {
     });
 
     it('should return null if transaction does not exist', async () => {
-      const result = await service.deleteTransaction(
-        missingTransactionId,
-        userId,
-      );
-      expect(result).toBeNull();
+      await expect(
+        service.deleteTransaction(missingTransactionId, userId),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('should delete a transaction and return it', async () => {
@@ -540,7 +526,7 @@ describe('TransactionsService', () => {
         throw new Error('Expected deleted transaction to be defined');
       }
       expect(deleted.id).toBe(existing.id);
-      expect(deleted.amount).toBe(1000);
+      expect(deleted.amount).toBe('1000.00');
     });
 
     it('should remove transaction from array', async () => {
@@ -576,9 +562,9 @@ describe('TransactionsService', () => {
 
     it('should return null when user tries to delete another users transaction', async () => {
       const [existing] = await service.getAllTransactions(userId);
-      const result = await service.deleteTransaction(existing.id, otherUserId);
-
-      expect(result).toBeNull();
+      await expect(
+        service.deleteTransaction(existing.id, otherUserId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

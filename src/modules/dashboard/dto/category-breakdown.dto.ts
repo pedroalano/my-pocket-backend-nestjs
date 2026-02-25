@@ -7,6 +7,7 @@ export class CategoryBreakdownItemDto {
 }
 
 export class CategoryBreakdownDto {
+  categoryId: string;
   category: CategoryBreakdownItemDto;
   totalAmount: number;
   percentage: number;

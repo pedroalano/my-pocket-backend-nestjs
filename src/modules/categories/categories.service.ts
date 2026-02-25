@@ -1,8 +1,10 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { Category, CategoryType } from '@prisma/client';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -25,10 +27,10 @@ export class CategoriesService {
 
   async getCategoryById(id: string, userId: string) {
     const category = await this.prisma.category.findUnique({
-      where: { id, userId },
+      where: { id },
     });
 
-    if (!category) {
+    if (!category || category.userId !== userId) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
@@ -36,15 +38,26 @@ export class CategoriesService {
   }
 
   async createCategory(createCategoryDto: CreateCategoryDto, userId: string) {
-    const category = await this.prisma.category.create({
-      data: {
-        name: createCategoryDto.name,
-        type: this.normalizeCategoryType(createCategoryDto.type),
-        userId,
-      },
-    });
-
-    return this.toApiCategory(category);
+    try {
+      const category = await this.prisma.category.create({
+        data: {
+          name: createCategoryDto.name,
+          type: this.normalizeCategoryType(createCategoryDto.type),
+          userId,
+        },
+      });
+      return this.toApiCategory(category);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          `Category with name "${createCategoryDto.name}" and type "${createCategoryDto.type}" already exists`,
+        );
+      }
+      throw error;
+    }
   }
 
   async updateCategory(
@@ -64,12 +77,23 @@ export class CategoriesService {
       data.type = this.normalizeCategoryType(updateCategoryDto.type);
     }
 
-    const category = await this.prisma.category.update({
-      where: { id },
-      data,
-    });
-
-    return this.toApiCategory(category);
+    try {
+      const category = await this.prisma.category.update({
+        where: { id },
+        data,
+      });
+      return this.toApiCategory(category);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          `Category with name "${updateCategoryDto.name}" and type "${updateCategoryDto.type}" already exists`,
+        );
+      }
+      throw error;
+    }
   }
 
   async deleteCategory(id: string, userId: string) {
@@ -93,19 +117,16 @@ export class CategoriesService {
   }
 
   private toApiCategory(category: Category) {
-    return {
-      ...category,
-      type: category.type.toLowerCase(),
-    };
+    return category;
   }
 
   private async ensureCategoryExists(id: string, userId: string) {
     const category = await this.prisma.category.findUnique({
-      where: { id, userId },
-      select: { id: true },
+      where: { id },
+      select: { id: true, userId: true },
     });
 
-    if (!category) {
+    if (!category || category.userId !== userId) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
   }

@@ -229,8 +229,9 @@ describe('DashboardService', () => {
       const food = result.find((item) => item.category.id === 'cat-1');
       expect(food).toEqual({
         category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
-        budgetAmount: 1000,
-        actualAmount: 500,
+        categoryId: 'cat-1',
+        budget: 1000,
+        actual: 500,
         difference: 500,
         percentageUsed: 50,
       });
@@ -238,8 +239,9 @@ describe('DashboardService', () => {
       const rent = result.find((item) => item.category.id === 'cat-2');
       expect(rent).toEqual({
         category: { id: 'cat-2', name: 'Rent', type: CategoryType.EXPENSE },
-        budgetAmount: 500,
-        actualAmount: 0,
+        categoryId: 'cat-2',
+        budget: 500,
+        actual: 0,
         difference: 500,
         percentageUsed: 0,
       });
@@ -247,8 +249,9 @@ describe('DashboardService', () => {
       const travel = result.find((item) => item.category.id === 'cat-3');
       expect(travel).toEqual({
         category: { id: 'cat-3', name: 'Travel', type: CategoryType.EXPENSE },
-        budgetAmount: 0,
-        actualAmount: 400,
+        categoryId: 'cat-3',
+        budget: 0,
+        actual: 400,
         difference: -400,
         percentageUsed: 100,
       });
@@ -335,6 +338,7 @@ describe('DashboardService', () => {
       const food = result.find((item) => item.category.id === 'cat-1');
       expect(food).toEqual({
         category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        categoryId: 'cat-1',
         totalAmount: 800,
         percentage: 80,
       });
@@ -346,6 +350,7 @@ describe('DashboardService', () => {
           name: 'Transport',
           type: CategoryType.EXPENSE,
         },
+        categoryId: 'cat-2',
         totalAmount: 200,
         percentage: 20,
       });
@@ -416,6 +421,7 @@ describe('DashboardService', () => {
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
         category: { id: 'cat-1', name: 'Food', type: CategoryType.EXPENSE },
+        categoryId: 'cat-1',
         totalAmount: 750,
         percentage: 100,
       });

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -35,6 +36,7 @@ export class BudgetService {
     month: true,
     year: true,
     type: true,
+    userId: true,
   };
 
   private readonly transactionSelect = {
@@ -70,7 +72,7 @@ export class BudgetService {
   }) {
     return {
       ...budget,
-      amount: Number(budget.amount),
+      amount: Number(budget.amount).toFixed(2),
     };
   }
 
@@ -137,20 +139,24 @@ export class BudgetService {
       where: { userId },
       select: this.budgetSelect,
     });
-    return budgets.map((budget) => this.mapBudget(budget));
+    return budgets.map((budget) => {
+      const { userId: _, ...budgetWithoutUserId } = budget;
+      return this.mapBudget(budgetWithoutUserId);
+    });
   }
 
   async getBudgetById(id: string, userId: string) {
     const budget = await this.prisma.budget.findUnique({
-      where: { id, userId },
+      where: { id },
       select: this.budgetSelect,
     });
 
-    if (!budget) {
-      return undefined;
+    if (!budget || budget.userId !== userId) {
+      throw new NotFoundException(`Budget with ID ${id} not found`);
     }
 
-    return this.mapBudget(budget);
+    const { userId: _, ...budgetWithoutUserId } = budget;
+    return this.mapBudget(budgetWithoutUserId);
   }
 
   async createBudget(budgetData: CreateBudgetDto, userId: string) {
@@ -186,13 +192,14 @@ export class BudgetService {
         },
         select: this.budgetSelect,
       });
-      return this.mapBudget(newBudget);
+      const { userId: _, ...budgetWithoutUserId } = newBudget;
+      return this.mapBudget(budgetWithoutUserId);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new BadRequestException(
+        throw new ConflictException(
           `Budget for category ${budgetData.categoryId}, type ${budgetData.type}, month ${budgetData.month}, and year ${budgetData.year} already exists`,
         );
       }
@@ -201,6 +208,15 @@ export class BudgetService {
   }
 
   async updateBudget(id: string, budgetData: UpdateBudgetDto, userId: string) {
+    const existingBudget = await this.prisma.budget.findUnique({
+      where: { id },
+      select: this.budgetSelect,
+    });
+
+    if (!existingBudget || existingBudget.userId !== userId) {
+      throw new NotFoundException(`Budget with ID ${id} not found`);
+    }
+
     if (
       budgetData.month !== undefined ||
       budgetData.year !== undefined ||
@@ -229,18 +245,9 @@ export class BudgetService {
       }
     }
 
-    const existingBudget = await this.prisma.budget.findUnique({
-      where: { id, userId },
-      select: this.budgetSelect,
-    });
-
-    if (!existingBudget) {
-      return null;
-    }
-
     try {
       const updatedBudget = await this.prisma.budget.update({
-        where: { id, userId },
+        where: { id },
         data: {
           amount: budgetData.amount,
           categoryId: budgetData.categoryId,
@@ -253,7 +260,8 @@ export class BudgetService {
         },
         select: this.budgetSelect,
       });
-      return this.mapBudget(updatedBudget);
+      const { userId: _, ...budgetWithoutUserId } = updatedBudget;
+      return this.mapBudget(budgetWithoutUserId);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -265,7 +273,7 @@ export class BudgetService {
           month: budgetData.month ?? existingBudget.month,
           year: budgetData.year ?? existingBudget.year,
         };
-        throw new BadRequestException(
+        throw new ConflictException(
           `Budget for category ${payload.categoryId}, type ${payload.type}, month ${payload.month}, and year ${payload.year} already exists`,
         );
       }
@@ -275,12 +283,12 @@ export class BudgetService {
 
   async deleteBudget(id: string, userId: string) {
     const existingBudget = await this.prisma.budget.findUnique({
-      where: { id, userId },
+      where: { id },
       select: this.budgetSelect,
     });
 
-    if (!existingBudget) {
-      return null;
+    if (!existingBudget || existingBudget.userId !== userId) {
+      throw new NotFoundException(`Budget with ID ${id} not found`);
     }
 
     const deletedBudget = await this.prisma.budget.delete({
@@ -288,7 +296,8 @@ export class BudgetService {
       select: this.budgetSelect,
     });
 
-    return this.mapBudget(deletedBudget);
+    const { userId: _, ...budgetWithoutUserId } = deletedBudget;
+    return this.mapBudget(budgetWithoutUserId);
   }
 
   private validateBudgetData(budgetData: CreateBudgetDto): void {

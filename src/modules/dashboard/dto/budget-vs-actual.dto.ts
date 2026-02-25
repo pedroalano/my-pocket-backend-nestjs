@@ -7,9 +7,10 @@ export class BudgetVsActualCategoryDto {
 }
 
 export class BudgetVsActualDto {
+  categoryId: string;
   category: BudgetVsActualCategoryDto;
-  budgetAmount: number;
-  actualAmount: number;
+  budget: number;
+  actual: number;
   difference: number;
   percentageUsed: number;
 }

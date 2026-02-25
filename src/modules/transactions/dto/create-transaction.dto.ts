@@ -1,7 +1,15 @@
-import { IsDateString, IsNumber, IsString, IsUUID } from 'class-validator';
+import {
+  IsDateString,
+  IsNumber,
+  IsOptional,
+  IsPositive,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateTransactionDto {
   @IsNumber()
+  @IsPositive()
   amount: number;
 
   @IsString()
@@ -13,6 +21,7 @@ export class CreateTransactionDto {
   @IsDateString()
   date: string;
 
+  @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
 }

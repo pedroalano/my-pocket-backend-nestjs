@@ -74,7 +74,7 @@ describe('CategoriesService', () => {
 
     expect(category).toEqual({
       ...mockCategory,
-      type: 'income',
+      type: 'INCOME',
     });
   });
 
@@ -106,11 +106,11 @@ describe('CategoriesService', () => {
     expect(categories).toEqual([
       {
         ...categoriesResponse[0],
-        type: 'income',
+        type: 'INCOME',
       },
       {
         ...categoriesResponse[1],
-        type: 'expense',
+        type: 'EXPENSE',
       },
     ]);
   });
@@ -123,12 +123,12 @@ describe('CategoriesService', () => {
     const category = await service.getCategoryById(categoryId, userId);
 
     expect(prismaService.category.findUnique).toHaveBeenCalledWith({
-      where: { id: categoryId, userId },
+      where: { id: categoryId },
     });
 
     expect(category).toEqual({
       ...mockCategory,
-      type: 'income',
+      type: 'INCOME',
     });
   });
 
@@ -140,7 +140,7 @@ describe('CategoriesService', () => {
     );
 
     expect(prismaService.category.findUnique).toHaveBeenCalledWith({
-      where: { id: categoryId, userId },
+      where: { id: categoryId },
     });
   });
 
@@ -152,7 +152,7 @@ describe('CategoriesService', () => {
     ).rejects.toThrow(NotFoundException);
 
     expect(prismaService.category.findUnique).toHaveBeenCalledWith({
-      where: { id: categoryId, userId: otherUserId },
+      where: { id: categoryId },
     });
   });
 
@@ -176,13 +176,13 @@ describe('CategoriesService', () => {
     );
 
     expect(prismaService.category.findUnique).toHaveBeenCalledWith({
-      where: { id: categoryId, userId },
-      select: { id: true },
+      where: { id: categoryId },
+      select: { id: true, userId: true },
     });
 
     expect(result).toEqual({
       ...updatedCategory,
-      type: 'income',
+      type: 'INCOME',
     });
   });
 
@@ -194,8 +194,8 @@ describe('CategoriesService', () => {
     ).rejects.toThrow(NotFoundException);
 
     expect(prismaService.category.findUnique).toHaveBeenCalledWith({
-      where: { id: categoryId, userId: otherUserId },
-      select: { id: true },
+      where: { id: categoryId },
+      select: { id: true, userId: true },
     });
   });
 
@@ -204,7 +204,7 @@ describe('CategoriesService', () => {
 
     jest
       .spyOn(prismaService.category, 'findUnique')
-      .mockResolvedValue({ id: categoryId } as any);
+      .mockResolvedValue({ id: categoryId, userId } as any);
     jest
       .spyOn(prismaService.category, 'delete')
       .mockResolvedValue(deletedCategory);
@@ -212,8 +212,8 @@ describe('CategoriesService', () => {
     const result = await service.deleteCategory(categoryId, userId);
 
     expect(prismaService.category.findUnique).toHaveBeenCalledWith({
-      where: { id: categoryId, userId },
-      select: { id: true },
+      where: { id: categoryId },
+      select: { id: true, userId: true },
     });
 
     expect(prismaService.category.delete).toHaveBeenCalledWith({
@@ -222,7 +222,7 @@ describe('CategoriesService', () => {
 
     expect(result).toEqual({
       ...deletedCategory,
-      type: 'income',
+      type: 'INCOME',
     });
   });
 
@@ -234,8 +234,8 @@ describe('CategoriesService', () => {
     ).rejects.toThrow(NotFoundException);
 
     expect(prismaService.category.findUnique).toHaveBeenCalledWith({
-      where: { id: categoryId, userId: otherUserId },
-      select: { id: true },
+      where: { id: categoryId },
+      select: { id: true, userId: true },
     });
   });
 });

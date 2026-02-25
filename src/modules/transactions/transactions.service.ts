@@ -37,7 +37,7 @@ export class TransactionsService {
   }) {
     return {
       ...transaction,
-      amount: Number(transaction.amount),
+      amount: Number(transaction.amount).toFixed(2),
       date: transaction.date.toISOString(),
     };
   }
@@ -49,6 +49,7 @@ export class TransactionsService {
     categoryId: true,
     date: true,
     description: true,
+    userId: true,
   };
 
   async getAllTransactions(userId: string) {
@@ -61,11 +62,11 @@ export class TransactionsService {
 
   async getTransactionById(id: string, userId: string) {
     const transaction = await this.prisma.transaction.findUnique({
-      where: { id, userId },
+      where: { id },
       select: this.transactionSelect,
     });
-    if (!transaction) {
-      return undefined;
+    if (!transaction || transaction.userId !== userId) {
+      throw new NotFoundException(`Transaction with ID ${id} not found`);
     }
     return this.mapTransaction(transaction);
   }
@@ -113,6 +114,15 @@ export class TransactionsService {
     updateTransactionDto: UpdateTransactionDto,
     userId: string,
   ) {
+    const existingTransaction = await this.prisma.transaction.findUnique({
+      where: { id },
+      select: this.transactionSelect,
+    });
+
+    if (!existingTransaction || existingTransaction.userId !== userId) {
+      throw new NotFoundException(`Transaction with ID ${id} not found`);
+    }
+
     // Validate category existence if categoryId is being updated
     if (updateTransactionDto.categoryId !== undefined) {
       let category = null;
@@ -133,15 +143,6 @@ export class TransactionsService {
           `Category with ID ${updateTransactionDto.categoryId} does not exist`,
         );
       }
-    }
-
-    const existingTransaction = await this.prisma.transaction.findUnique({
-      where: { id, userId },
-      select: this.transactionSelect,
-    });
-
-    if (!existingTransaction) {
-      return null;
     }
 
     const updatedTransaction = await this.prisma.transaction.update({
@@ -167,12 +168,12 @@ export class TransactionsService {
 
   async deleteTransaction(id: string, userId: string) {
     const existingTransaction = await this.prisma.transaction.findUnique({
-      where: { id, userId },
+      where: { id },
       select: this.transactionSelect,
     });
 
-    if (!existingTransaction) {
-      return null;
+    if (!existingTransaction || existingTransaction.userId !== userId) {
+      throw new NotFoundException(`Transaction with ID ${id} not found`);
     }
 
     const deletedTransaction = await this.prisma.transaction.delete({

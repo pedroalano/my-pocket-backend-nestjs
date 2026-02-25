@@ -146,9 +146,10 @@ export class DashboardService {
           : (actualAmount / budgetAmount) * 100;
 
       results.push({
+        categoryId: budget.categoryId,
         category: budget.category,
-        budgetAmount,
-        actualAmount,
+        budget: budgetAmount,
+        actual: actualAmount,
         difference,
         percentageUsed,
       });
@@ -167,9 +168,10 @@ export class DashboardService {
       const percentageUsed = actualAmount > 0 ? 100 : 0;
 
       results.push({
+        categoryId,
         category: entry.category,
-        budgetAmount,
-        actualAmount,
+        budget: budgetAmount,
+        actual: actualAmount,
         difference,
         percentageUsed,
       });
@@ -237,11 +239,12 @@ export class DashboardService {
     // Convert map to array and calculate percentages
     const results: CategoryBreakdownDto[] = [];
 
-    categoryMap.forEach((entry) => {
+    categoryMap.forEach((entry, categoryId) => {
       const percentage =
         grandTotal === 0 ? 0 : (entry.totalAmount / grandTotal) * 100;
 
       results.push({
+        categoryId,
         category: entry.category,
         totalAmount: entry.totalAmount,
         percentage,
