@@ -72,7 +72,7 @@ export class BudgetService {
   }) {
     return {
       ...budget,
-      amount: Number(budget.amount),
+      amount: Number(budget.amount).toFixed(2),
     };
   }
 
@@ -86,7 +86,7 @@ export class BudgetService {
   }) {
     return {
       ...transaction,
-      amount: Number(transaction.amount),
+      amount: Number(transaction.amount).toFixed(2),
       date: transaction.date.toISOString(),
     };
   }

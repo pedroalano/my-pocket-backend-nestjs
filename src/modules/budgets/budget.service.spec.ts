@@ -902,7 +902,7 @@ describe('BudgetService', () => {
         transactions: [
           {
             id: 't1',
-            amount: 150,
+            amount: '150.00',
             categoryId,
             type: TransactionType.EXPENSE,
             date: '2026-01-10T00:00:00.000Z',
@@ -911,7 +911,7 @@ describe('BudgetService', () => {
           },
           {
             id: 't2',
-            amount: 100,
+            amount: '100.00',
             categoryId,
             type: TransactionType.EXPENSE,
             date: '2026-01-20T00:00:00.000Z',
@@ -1135,7 +1135,7 @@ describe('BudgetService', () => {
 
       expect(transactions).toHaveLength(1);
       expect(transactions[0].description).toBe('User 1 transaction');
-      expect(transactions[0].amount).toBe(100);
+      expect(transactions[0].amount).toBe('100.00');
     });
 
     it('should return empty array when other user tries to get transactions for a budget', async () => {
