@@ -283,7 +283,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         ...createDto,
-        amount: '500.00',
+        amount: 500,
         id: result.id,
       });
       expect(categoriesService.getCategoryById).toHaveBeenCalledWith(
@@ -417,7 +417,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: '700.00',
+        amount: 700,
         categoryId,
         month: 1,
         year: 2026,
@@ -485,7 +485,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: '800.00',
+        amount: 800,
         categoryId,
         month: 1,
         year: 2026,
@@ -808,7 +808,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: '500.00',
+        amount: 500,
         categoryId,
         month: 1,
         year: 2026,
@@ -886,7 +886,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: '500.00',
+        amount: 500,
         categoryId,
         month: 1,
         year: 2026,
@@ -991,9 +991,9 @@ describe('BudgetService', () => {
       const otherUserBudgets = await service.getAllBudgets(otherUserId);
 
       expect(userBudgets).toHaveLength(1);
-      expect(userBudgets[0].amount).toBe('500.00');
+      expect(userBudgets[0].amount).toBe(500);
       expect(otherUserBudgets).toHaveLength(1);
-      expect(otherUserBudgets[0].amount).toBe('600.00');
+      expect(otherUserBudgets[0].amount).toBe(600);
     });
 
     it('should return null when user tries to access another users budget', async () => {
