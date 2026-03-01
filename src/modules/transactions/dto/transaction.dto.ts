@@ -9,9 +9,10 @@ export class TransactionDto {
 
   @ApiProperty({
     description: 'Transaction amount (must be positive)',
-    example: 99.99,
+    example: '99.99',
+    type: 'string',
   })
-  amount: number;
+  amount: string;
 
   @ApiProperty({
     description: 'Transaction type',

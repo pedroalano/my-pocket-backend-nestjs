@@ -283,7 +283,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         ...createDto,
-        amount: 500,
+        amount: '500.00',
         id: result.id,
       });
       expect(categoriesService.getCategoryById).toHaveBeenCalledWith(
@@ -417,7 +417,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: 700,
+        amount: '700.00',
         categoryId,
         month: 1,
         year: 2026,
@@ -485,7 +485,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: 800,
+        amount: '800.00',
         categoryId,
         month: 1,
         year: 2026,
@@ -662,7 +662,7 @@ describe('BudgetService', () => {
       const [budget] = await service.getAllBudgets(userId);
       const remaining = await service.getRemainingBudget(budget.id, userId);
 
-      expect(remaining).toBe(300);
+      expect(remaining).toBe('300.00');
     });
 
     it('should return negative value when overspent', async () => {
@@ -682,7 +682,7 @@ describe('BudgetService', () => {
       const [budget] = await service.getAllBudgets(userId);
       const remaining = await service.getRemainingBudget(budget.id, userId);
 
-      expect(remaining).toBe(-100);
+      expect(remaining).toBe('-100.00');
     });
 
     it('should return 0 when budget does not exist', async () => {
@@ -725,8 +725,8 @@ describe('BudgetService', () => {
       }
 
       expect(result.utilizationPercentage).toBe(50);
-      expect(result.spent).toBe(250);
-      expect(result.remaining).toBe(250);
+      expect(result.spent).toBe('250.00');
+      expect(result.remaining).toBe('250.00');
     });
 
     it('should return 0 utilization when amount is 0', async () => {
@@ -808,7 +808,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: 500,
+        amount: '500.00',
         categoryId,
         month: 1,
         year: 2026,
@@ -886,7 +886,7 @@ describe('BudgetService', () => {
 
       expect(result).toEqual({
         id: budget.id,
-        amount: 500,
+        amount: '500.00',
         categoryId,
         month: 1,
         year: 2026,
@@ -919,8 +919,8 @@ describe('BudgetService', () => {
             userId,
           },
         ],
-        spent: 250,
-        remaining: 250,
+        spent: '250.00',
+        remaining: '250.00',
         utilizationPercentage: 50,
       });
     });
@@ -950,7 +950,7 @@ describe('BudgetService', () => {
       );
 
       expect(result?.transactions).toEqual([]);
-      expect(result?.spent).toBe(0);
+      expect(result?.spent).toBe('0.00');
       expect(result?.utilizationPercentage).toBe(0);
     });
   });
@@ -991,9 +991,9 @@ describe('BudgetService', () => {
       const otherUserBudgets = await service.getAllBudgets(otherUserId);
 
       expect(userBudgets).toHaveLength(1);
-      expect(userBudgets[0].amount).toBe(500);
+      expect(userBudgets[0].amount).toBe('500.00');
       expect(otherUserBudgets).toHaveLength(1);
-      expect(otherUserBudgets[0].amount).toBe(600);
+      expect(otherUserBudgets[0].amount).toBe('600.00');
     });
 
     it('should return null when user tries to access another users budget', async () => {
@@ -1190,6 +1190,51 @@ describe('BudgetService', () => {
 
       // Should only count the 100 amount, not the 200 from other user
       expect(spent).toBe(100);
+    });
+  });
+
+  describe('Decimal serialization consistency', () => {
+    it('should serialize monetary amounts as fixed-precision strings', async () => {
+      const createDto: CreateBudgetDto = {
+        amount: 500,
+        categoryId,
+        month: 1,
+        year: 2026,
+        type: BudgetType.EXPENSE,
+      };
+      const budget = await service.createBudget(createDto, userId);
+
+      // Amount should be a string with 2 decimal places
+      expect(budget.amount).toBe('500.00');
+      expect(typeof budget.amount).toBe('string');
+      expect(budget.amount).toMatch(/^\d+\.\d{2}$/);
+    });
+
+    it('should serialize spending fields as fixed-precision strings', async () => {
+      const createDto: CreateBudgetDto = {
+        amount: 500,
+        categoryId,
+        month: 1,
+        year: 2026,
+        type: BudgetType.EXPENSE,
+      };
+      const budget = await service.createBudget(createDto, userId);
+      const result = await service.getBudgetWithSpending(budget.id, userId);
+
+      if (!result) {
+        throw new Error('Expected budget with spending to be defined');
+      }
+
+      // Monetary fields should be strings with 2 decimal places
+      expect(typeof result.amount).toBe('string');
+      expect(typeof result.spent).toBe('string');
+      expect(typeof result.remaining).toBe('string');
+      expect(result.amount).toMatch(/^-?\d+\.\d{2}$/);
+      expect(result.spent).toMatch(/^-?\d+\.\d{2}$/);
+      expect(result.remaining).toMatch(/^-?\d+\.\d{2}$/);
+
+      // utilizationPercentage should remain a number
+      expect(typeof result.utilizationPercentage).toBe('number');
     });
   });
 });

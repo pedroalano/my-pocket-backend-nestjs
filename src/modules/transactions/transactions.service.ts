@@ -8,6 +8,7 @@ import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { CategoriesService } from '../categories/categories.service';
 import { PrismaService } from '../shared/prisma.service';
+import { formatDecimal } from '../shared';
 
 @Injectable()
 export class TransactionsService {
@@ -37,7 +38,7 @@ export class TransactionsService {
   }) {
     return {
       ...transaction,
-      amount: Number(transaction.amount).toFixed(2),
+      amount: formatDecimal(transaction.amount),
       date: transaction.date.toISOString(),
     };
   }

@@ -10,9 +10,10 @@ export class BudgetDto {
 
   @ApiProperty({
     description: 'Budget amount (must be positive)',
-    example: 500.0,
+    example: '500.00',
+    type: 'string',
   })
-  amount: number;
+  amount: string;
 
   @ApiProperty({
     description: 'Category UUID',

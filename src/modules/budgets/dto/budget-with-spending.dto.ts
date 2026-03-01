@@ -10,9 +10,10 @@ export class BudgetWithSpendingDto {
 
   @ApiProperty({
     description: 'Budget amount (must be positive)',
-    example: 500.0,
+    example: '500.00',
+    type: 'string',
   })
-  amount: number;
+  amount: string;
 
   @ApiProperty({
     description: 'Category UUID',
@@ -43,15 +44,17 @@ export class BudgetWithSpendingDto {
 
   @ApiProperty({
     description: 'Total amount spent in this budget period',
-    example: 350.5,
+    example: '350.50',
+    type: 'string',
   })
-  spent: number;
+  spent: string;
 
   @ApiProperty({
     description: 'Remaining amount in the budget',
-    example: 149.5,
+    example: '149.50',
+    type: 'string',
   })
-  remaining: number;
+  remaining: string;
 
   @ApiProperty({
     description: 'Percentage of budget utilized',

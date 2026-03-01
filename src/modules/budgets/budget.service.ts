@@ -9,16 +9,17 @@ import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
 import { CategoriesService } from '../categories/categories.service';
 import { PrismaService } from '../shared/prisma.service';
+import { formatDecimal } from '../shared';
 
 type BudgetWithSpending = {
   id: string;
-  amount: number;
+  amount: string;
   categoryId: string;
   month: number;
   year: number;
   type: BudgetType;
-  spent: number;
-  remaining: number;
+  spent: string;
+  remaining: string;
   utilizationPercentage: number;
 };
 
@@ -72,7 +73,7 @@ export class BudgetService {
   }) {
     return {
       ...budget,
-      amount: Number(budget.amount),
+      amount: formatDecimal(budget.amount),
     };
   }
 
@@ -86,7 +87,7 @@ export class BudgetService {
   }) {
     return {
       ...transaction,
-      amount: Number(transaction.amount).toFixed(2),
+      amount: formatDecimal(transaction.amount),
       date: transaction.date.toISOString(),
     };
   }
@@ -324,14 +325,14 @@ export class BudgetService {
     return this.calculateSpentAmount(budget, userId);
   }
 
-  async getRemainingBudget(budgetId: string, userId: string): Promise<number> {
+  async getRemainingBudget(budgetId: string, userId: string): Promise<string> {
     const budget = await this.getBudgetById(budgetId, userId);
     if (!budget) {
-      return 0;
+      return formatDecimal(0);
     }
 
     const spent = await this.calculateSpentAmount(budget, userId);
-    return budget.amount - spent;
+    return formatDecimal(Number(budget.amount) - spent);
   }
 
   async getBudgetWithSpending(
@@ -344,14 +345,15 @@ export class BudgetService {
     }
 
     const spent = await this.calculateSpentAmount(budget, userId);
-    const remaining = budget.amount - spent;
+    const numericAmount = Number(budget.amount);
+    const remaining = numericAmount - spent;
     const utilizationPercentage =
-      budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
+      numericAmount > 0 ? (spent / numericAmount) * 100 : 0;
 
     return {
       ...budget,
-      spent,
-      remaining,
+      spent: formatDecimal(spent),
+      remaining: formatDecimal(remaining),
       utilizationPercentage,
     };
   }
@@ -431,16 +433,17 @@ export class BudgetService {
       this.getTransactionsForBudget(budgetId, userId),
       this.calculateSpentAmount(budget, userId),
     ]);
-    const remaining = budget.amount - spent;
+    const numericAmount = Number(budget.amount);
+    const remaining = numericAmount - spent;
     const utilizationPercentage =
-      budget.amount > 0 ? (spent / budget.amount) * 100 : 0;
+      numericAmount > 0 ? (spent / numericAmount) * 100 : 0;
 
     return {
       ...budget,
       category: category || null,
       transactions,
-      spent,
-      remaining,
+      spent: formatDecimal(spent),
+      remaining: formatDecimal(remaining),
       utilizationPercentage,
     };
   }
@@ -458,14 +461,15 @@ export class BudgetService {
       budgets.map(async (budget) => {
         const mapped = this.mapBudget(budget);
         const spent = await this.calculateSpentAmount(mapped, userId);
-        const remaining = mapped.amount - spent;
+        const numericAmount = Number(mapped.amount);
+        const remaining = numericAmount - spent;
         const utilizationPercentage =
-          mapped.amount > 0 ? (spent / mapped.amount) * 100 : 0;
+          numericAmount > 0 ? (spent / numericAmount) * 100 : 0;
 
         return {
           ...mapped,
-          spent,
-          remaining,
+          spent: formatDecimal(spent),
+          remaining: formatDecimal(remaining),
           utilizationPercentage,
         };
       }),
