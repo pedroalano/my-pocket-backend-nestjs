@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { render, RenderOptions, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { vi } from 'vitest';
+import { vi, expect } from 'vitest';
 import { AuthProvider } from '@/contexts/AuthContext';
 
 interface WrapperProps {
