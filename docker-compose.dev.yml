@@ -1,0 +1,108 @@
+services:
+  # PostgreSQL for Development
+  postgres:
+    image: postgres:16-alpine
+    container_name: my-pocket-postgres-dev
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bd_my_pocket
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - my-pocket-network
+
+  # PostgreSQL for Testing
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: my-pocket-postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bd_my_pocket_test
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - '5433:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - my-pocket-network
+
+  # NestJS API Application (Development)
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+      target: development
+    container_name: my-pocket-api-dev
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/bd_my_pocket
+      NODE_ENV: development
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-not-for-production}
+      JWT_EXPIRATION: 3600
+      PORT: 3001
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Source code for hot-reload
+      - ./apps/api/src:/app/apps/api/src
+      - ./packages/shared/src:/app/packages/shared/src
+      # Config files
+      - ./apps/api/tsconfig.json:/app/apps/api/tsconfig.json
+      - ./apps/api/tsconfig.build.json:/app/apps/api/tsconfig.build.json
+      - ./apps/api/nest-cli.json:/app/apps/api/nest-cli.json
+      # Prisma schema for regeneration
+      - ./prisma:/app/prisma
+    networks:
+      - my-pocket-network
+
+  # Next.js Web Application (Development)
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+      target: development
+    container_name: my-pocket-web-dev
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      WATCHPACK_POLLING: 'true'
+    ports:
+      - '3000:3000'
+    depends_on:
+      - api
+    volumes:
+      # Source code for hot-reload
+      - ./apps/web/src:/app/apps/web/src
+      - ./packages/shared/src:/app/packages/shared/src
+      # Config files
+      - ./apps/web/next.config.mjs:/app/apps/web/next.config.mjs
+      - ./apps/web/tsconfig.json:/app/apps/web/tsconfig.json
+      - ./apps/web/postcss.config.mjs:/app/apps/web/postcss.config.mjs
+      - ./apps/web/components.json:/app/apps/web/components.json
+      # Public assets
+      - ./apps/web/public:/app/apps/web/public
+    networks:
+      - my-pocket-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  my-pocket-network:
+    driver: bridge

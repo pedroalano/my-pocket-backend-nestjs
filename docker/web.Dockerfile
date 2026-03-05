@@ -26,6 +26,19 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 
+FROM dependencies AS development
+
+WORKDIR /app
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY apps/web ./apps/web
+
+WORKDIR /app/apps/web
+EXPOSE 3000
+CMD ["npm", "run", "dev"]
+
+
 FROM node:22-alpine AS production
 
 WORKDIR /app

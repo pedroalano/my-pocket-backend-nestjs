@@ -36,7 +36,7 @@ COPY apps/api/tsconfig*.json ./apps/api/
 COPY apps/api/nest-cli.json ./apps/api/
 COPY apps/api/src ./apps/api/src
 
-EXPOSE 3000
+EXPOSE 3001
 WORKDIR /app/apps/api
 CMD ["npm", "run", "dev"]
 
