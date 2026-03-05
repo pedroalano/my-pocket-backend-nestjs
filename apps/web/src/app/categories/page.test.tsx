@@ -3,7 +3,11 @@ import { screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { mockCategories, mockToken } from '@/test/mocks/handlers';
-import { renderWithProviders, userEvent } from '@/test/test-utils';
+import {
+  renderWithProviders,
+  setupUser,
+  selectOption,
+} from '@/test/test-utils';
 import CategoriesPage from './page';
 
 const API_URL = 'http://localhost:3001';
@@ -70,7 +74,7 @@ describe('CategoriesPage', () => {
   });
 
   it('shows "no matches" message when search yields no results', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     renderWithProviders(<CategoriesPage />);
 
     await waitFor(() => {
@@ -86,7 +90,7 @@ describe('CategoriesPage', () => {
   });
 
   it('filters categories by search query', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     renderWithProviders(<CategoriesPage />);
 
     await waitFor(() => {
@@ -101,38 +105,30 @@ describe('CategoriesPage', () => {
   });
 
   it('filters categories by type with dropdown', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     renderWithProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();
     });
 
-    // Open the type filter dropdown
-    const typeSelect = screen.getByRole('combobox');
-    await user.click(typeSelect);
-
-    // Select "Income"
-    await user.click(screen.getByRole('option', { name: 'Income' }));
+    // Use selectOption helper to properly handle Radix UI Select async behavior
+    await selectOption(user, screen.getByRole('combobox'), 'Income');
 
     expect(screen.getByText('Salary')).toBeInTheDocument();
     expect(screen.queryByText('Groceries')).not.toBeInTheDocument();
   });
 
   it('filters to show only expense categories', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     renderWithProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Groceries')).toBeInTheDocument();
     });
 
-    // Open the type filter dropdown
-    const typeSelect = screen.getByRole('combobox');
-    await user.click(typeSelect);
-
-    // Select "Expense"
-    await user.click(screen.getByRole('option', { name: 'Expense' }));
+    // Use selectOption helper to properly handle Radix UI Select async behavior
+    await selectOption(user, screen.getByRole('combobox'), 'Expense');
 
     expect(screen.getByText('Groceries')).toBeInTheDocument();
     expect(screen.queryByText('Salary')).not.toBeInTheDocument();
@@ -163,7 +159,7 @@ describe('CategoriesPage', () => {
   });
 
   it('opens delete confirmation dialog when Delete is clicked', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     renderWithProviders(<CategoriesPage />);
 
     await waitFor(() => {
@@ -181,7 +177,7 @@ describe('CategoriesPage', () => {
   });
 
   it('closes delete dialog when Cancel is clicked', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     renderWithProviders(<CategoriesPage />);
 
     await waitFor(() => {
@@ -203,7 +199,7 @@ describe('CategoriesPage', () => {
   });
 
   it('deletes category when confirmed and removes from list', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     const { toast } = await import('sonner');
     renderWithProviders(<CategoriesPage />);
 
@@ -283,7 +279,7 @@ describe('CategoriesPage', () => {
   });
 
   it('shows error toast when delete fails', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     const { toast } = await import('sonner');
 
     server.use(
@@ -320,7 +316,7 @@ describe('CategoriesPage', () => {
   });
 
   it('combines search and type filter', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
 
     // Add more categories for better filter testing
     server.use(
@@ -348,10 +344,8 @@ describe('CategoriesPage', () => {
     const searchInput = screen.getByPlaceholderText('Search categories...');
     await user.type(searchInput, 'sal');
 
-    // Filter by INCOME
-    const typeSelect = screen.getByRole('combobox');
-    await user.click(typeSelect);
-    await user.click(screen.getByRole('option', { name: 'Income' }));
+    // Use selectOption helper to properly handle Radix UI Select async behavior
+    await selectOption(user, screen.getByRole('combobox'), 'Income');
 
     // Only "Salary" should match (not Groceries - wrong type, not Savings Interest - doesn't match 'sal')
     expect(screen.getByText('Salary')).toBeInTheDocument();

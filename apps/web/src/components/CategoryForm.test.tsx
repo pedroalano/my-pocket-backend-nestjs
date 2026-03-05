@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { setupUser, selectOption } from '@/test/test-utils';
 import { CategoryForm } from './CategoryForm';
 import { CategoryType } from '@/types';
 import { ApiException } from '@/lib/api';
@@ -76,7 +76,7 @@ describe('CategoryForm', () => {
   });
 
   it('should show error toast when type is not selected', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
 
     render(
       <CategoryForm
@@ -97,7 +97,7 @@ describe('CategoryForm', () => {
   });
 
   it('should submit form with valid data', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
 
     render(
       <CategoryForm
@@ -109,11 +109,8 @@ describe('CategoryForm', () => {
 
     await user.type(screen.getByLabelText('Name'), 'Groceries');
 
-    // Click on the select trigger to open the dropdown
-    await user.click(screen.getByRole('combobox'));
-
-    // Select the Expense option
-    await user.click(screen.getByRole('option', { name: 'Expense' }));
+    // Use selectOption helper to properly handle Radix UI Select async behavior
+    await selectOption(user, screen.getByRole('combobox'), 'Expense');
 
     await user.click(screen.getByRole('button', { name: 'Create' }));
 
@@ -129,7 +126,7 @@ describe('CategoryForm', () => {
   });
 
   it('should show success message for update', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
 
     render(
       <CategoryForm
@@ -150,7 +147,7 @@ describe('CategoryForm', () => {
   });
 
   it('should handle API exception', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     mockOnSubmit.mockRejectedValue(
       new ApiException(409, 'Category already exists'),
     );
@@ -172,7 +169,7 @@ describe('CategoryForm', () => {
   });
 
   it('should handle generic error', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     mockOnSubmit.mockRejectedValue(new Error('Network error'));
 
     render(
@@ -192,7 +189,7 @@ describe('CategoryForm', () => {
   });
 
   it('should disable inputs during loading', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
     // Make the submit never resolve to keep loading state
     mockOnSubmit.mockImplementation(() => new Promise(() => {}));
 
@@ -216,7 +213,7 @@ describe('CategoryForm', () => {
   });
 
   it('should navigate to categories on cancel', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
 
     render(
       <CategoryForm
@@ -232,7 +229,7 @@ describe('CategoryForm', () => {
   });
 
   it('should trim whitespace from name', async () => {
-    const user = userEvent.setup();
+    const user = setupUser();
 
     render(
       <CategoryForm
