@@ -47,6 +47,31 @@ export const mockBudgets = [
   },
 ];
 
+export const mockTransactions = [
+  {
+    id: 'transaction-1',
+    amount: '150.00',
+    type: 'EXPENSE',
+    categoryId: 'cat-2',
+    date: '2026-03-01T10:00:00.000Z',
+    description: 'Grocery shopping',
+    userId: 'test-user-id',
+    createdAt: '2026-03-01T10:00:00.000Z',
+    updatedAt: '2026-03-01T10:00:00.000Z',
+  },
+  {
+    id: 'transaction-2',
+    amount: '3000.00',
+    type: 'INCOME',
+    categoryId: 'cat-1',
+    date: '2026-03-05T09:00:00.000Z',
+    description: 'Monthly salary',
+    userId: 'test-user-id',
+    createdAt: '2026-03-05T09:00:00.000Z',
+    updatedAt: '2026-03-05T09:00:00.000Z',
+  },
+];
+
 // Generate a valid-looking JWT for testing
 export const mockToken =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItaWQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJuYW1lIjoiVGVzdCBVc2VyIiwiaWF0IjoxNzA0MDY3MjAwfQ.fake-signature';
@@ -265,6 +290,116 @@ export const handlers = [
     if (!budget) {
       return HttpResponse.json(
         { message: 'Budget not found', statusCode: 404 },
+        { status: 404 },
+      );
+    }
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  // Transactions endpoints
+  http.get(`${API_URL}/transactions`, ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    return HttpResponse.json(mockTransactions);
+  }),
+
+  http.get(`${API_URL}/transactions/:id`, ({ params, request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    const transaction = mockTransactions.find((t) => t.id === params.id);
+    if (!transaction) {
+      return HttpResponse.json(
+        { message: 'Transaction not found', statusCode: 404 },
+        { status: 404 },
+      );
+    }
+    return HttpResponse.json(transaction);
+  }),
+
+  http.post(`${API_URL}/transactions`, async ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    const body = (await request.json()) as {
+      amount: number;
+      type: string;
+      categoryId: string;
+      date: string;
+      description?: string;
+    };
+    return HttpResponse.json({
+      id: 'new-transaction-id',
+      amount: body.amount.toFixed(2),
+      type: body.type,
+      categoryId: body.categoryId,
+      date: body.date,
+      description: body.description,
+      userId: 'test-user-id',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  }),
+
+  http.put(`${API_URL}/transactions/:id`, async ({ params, request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    const transaction = mockTransactions.find((t) => t.id === params.id);
+    if (!transaction) {
+      return HttpResponse.json(
+        { message: 'Transaction not found', statusCode: 404 },
+        { status: 404 },
+      );
+    }
+    const body = (await request.json()) as {
+      amount?: number;
+      type?: string;
+      categoryId?: string;
+      date?: string;
+      description?: string;
+    };
+    return HttpResponse.json({
+      ...transaction,
+      amount:
+        body.amount !== undefined ? body.amount.toFixed(2) : transaction.amount,
+      type: body.type ?? transaction.type,
+      categoryId: body.categoryId ?? transaction.categoryId,
+      date: body.date ?? transaction.date,
+      description: body.description ?? transaction.description,
+      updatedAt: new Date().toISOString(),
+    });
+  }),
+
+  http.delete(`${API_URL}/transactions/:id`, ({ params, request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    const transaction = mockTransactions.find((t) => t.id === params.id);
+    if (!transaction) {
+      return HttpResponse.json(
+        { message: 'Transaction not found', statusCode: 404 },
         { status: 404 },
       );
     }

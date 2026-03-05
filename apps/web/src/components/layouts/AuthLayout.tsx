@@ -49,6 +49,12 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               >
                 Budgets
               </Link>
+              <Link
+                href="/transactions"
+                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              >
+                Transactions
+              </Link>
             </nav>
           </div>
           <Button variant="outline" onClick={logout}>
