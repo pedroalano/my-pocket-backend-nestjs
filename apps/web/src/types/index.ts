@@ -153,3 +153,34 @@ export interface ApiError {
   message: string;
   statusCode: number;
 }
+
+// Dashboard types
+export interface MonthlySummary {
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+}
+
+export interface BudgetVsActual {
+  categoryId: string;
+  category: { id: string; name: string; type: CategoryType };
+  budget: number;
+  actual: number;
+  difference: number;
+  percentageUsed: number;
+}
+
+export interface CategoryBreakdown {
+  categoryId: string;
+  category: { id: string; name: string; type: CategoryType };
+  totalAmount: number;
+  percentage: number;
+}
+
+export interface TopExpense {
+  id: string;
+  description: string | null;
+  date: string;
+  amount: number;
+  category: { id: string; name: string; type: CategoryType };
+}

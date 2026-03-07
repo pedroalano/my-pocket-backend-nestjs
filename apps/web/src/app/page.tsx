@@ -12,7 +12,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push('/categories');
+      router.push('/dashboard');
     }
   }, [isLoading, isAuthenticated, router]);
 
