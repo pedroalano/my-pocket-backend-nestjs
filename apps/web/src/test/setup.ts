@@ -74,11 +74,12 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock ResizeObserver for Radix UI components
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
+// Must use a regular function (not arrow) because vi.fn() calls it with `new`
+global.ResizeObserver = vi.fn().mockImplementation(function () {
+  this.observe = vi.fn();
+  this.unobserve = vi.fn();
+  this.disconnect = vi.fn();
+}) as unknown as typeof ResizeObserver;
 
 // Setup MSW
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
