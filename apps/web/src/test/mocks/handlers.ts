@@ -112,6 +112,57 @@ export const mockBudgetsWithSpending = [
   },
 ];
 
+// Dashboard mock data
+export const mockMonthlySummary = {
+  totalIncome: 3000,
+  totalExpense: 150,
+  balance: 2850,
+};
+
+export const mockBudgetVsActual = [
+  {
+    categoryId: 'cat-2',
+    category: { id: 'cat-2', name: 'Groceries', type: 'EXPENSE' },
+    budget: 500,
+    actual: 150,
+    difference: 350,
+    percentageUsed: 30,
+  },
+  {
+    categoryId: 'cat-1',
+    category: { id: 'cat-1', name: 'Salary', type: 'INCOME' },
+    budget: 3000,
+    actual: 3000,
+    difference: 0,
+    percentageUsed: 100,
+  },
+];
+
+export const mockCategoryBreakdown = [
+  {
+    categoryId: 'cat-1',
+    category: { id: 'cat-1', name: 'Salary', type: 'INCOME' },
+    totalAmount: 3000,
+    percentage: 95.24,
+  },
+  {
+    categoryId: 'cat-2',
+    category: { id: 'cat-2', name: 'Groceries', type: 'EXPENSE' },
+    totalAmount: 150,
+    percentage: 4.76,
+  },
+];
+
+export const mockTopExpenses = [
+  {
+    id: 'transaction-1',
+    description: 'Grocery shopping',
+    date: '2026-03-01T10:00:00.000Z',
+    amount: 150,
+    category: { id: 'cat-2', name: 'Groceries', type: 'EXPENSE' },
+  },
+];
+
 // Generate a valid-looking JWT for testing
 export const mockToken =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItaWQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJuYW1lIjoiVGVzdCBVc2VyIiwiaWF0IjoxNzA0MDY3MjAwfQ.fake-signature';
@@ -378,6 +429,51 @@ export const handlers = [
       );
     }
     return new HttpResponse(null, { status: 204 });
+  }),
+
+  // Dashboard endpoints
+  http.get(`${API_URL}/dashboard/monthly-summary`, ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    return HttpResponse.json(mockMonthlySummary);
+  }),
+
+  http.get(`${API_URL}/dashboard/budget-vs-actual`, ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    return HttpResponse.json(mockBudgetVsActual);
+  }),
+
+  http.get(`${API_URL}/dashboard/category-breakdown`, ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    return HttpResponse.json(mockCategoryBreakdown);
+  }),
+
+  http.get(`${API_URL}/dashboard/top-expenses`, ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    return HttpResponse.json(mockTopExpenses);
   }),
 
   // Transactions endpoints
