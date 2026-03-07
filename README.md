@@ -40,7 +40,11 @@ my-pocket/
 - **Framework:** Next.js 15 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS 4
+- **UI Components:** shadcn/ui, Radix UI
+- **Icons:** Lucide React
+- **Notifications:** Sonner
 - **Bundler:** Turbopack
+- **Testing:** Vitest + Testing Library
 
 ### Shared (packages/shared)
 
@@ -52,9 +56,9 @@ my-pocket/
 
 ## 📋 Prerequisites
 
-- **Node.js** 18+ (tested with v22)
+- **Node.js** 22+ (uses `packageManager: npm@10.9.2`)
 - **PostgreSQL** 16+
-- **npm** 10+
+- **Docker** (recommended for local development)
 
 ---
 
@@ -80,6 +84,15 @@ For the frontend, create `apps/web/.env.local`:
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
+
+### Environment Files Reference
+
+| File                  | Purpose                                       |
+| --------------------- | --------------------------------------------- |
+| `.env`                | Main environment (copied from `.env.example`) |
+| `.env.example`        | Template with all required variables          |
+| `.env.test`           | Test database configuration (port 5433)       |
+| `apps/web/.env.local` | Frontend API URL configuration                |
 
 ---
 
@@ -149,39 +162,81 @@ npm run test:e2e --filter=@my-pocket/api
 
 ## 🐳 Docker
 
-### Development
+### Development (with hot-reload)
 
 ```bash
-# Start all services (postgres, api, web)
-docker-compose up -d
+# Start all services with hot-reload
+npm run docker:dev
+
+# Build and start (after Dockerfile changes)
+npm run docker:dev:build
+
+# Stop all services
+npm run docker:dev:down
 ```
 
-### Production Build
+### Production
 
 ```bash
-# Build and run production containers
-docker-compose -f docker-compose.yml up --build
+# Start production containers
+npm run docker:prod
+
+# Build and start production containers
+npm run docker:prod:build
+
+# Stop production containers
+npm run docker:prod:down
 ```
 
 **Services:**
 
-- `postgres` - PostgreSQL database (port 5432)
-- `api` - NestJS backend (port 3001)
-- `web` - Next.js frontend (port 3000)
+| Service         | Description              | Port |
+| --------------- | ------------------------ | ---- |
+| `postgres`      | PostgreSQL database      | 5432 |
+| `postgres-test` | PostgreSQL test database | 5433 |
+| `api`           | NestJS backend           | 3001 |
+| `web`           | Next.js frontend         | 3000 |
 
 ---
 
 ## 📦 Available Scripts
 
-| Script                   | Description                        |
-| ------------------------ | ---------------------------------- |
-| `npm run dev`            | Start all apps in development mode |
-| `npm run build`          | Build all apps                     |
-| `npm run lint`           | Lint all apps                      |
-| `npm run test`           | Run all tests                      |
-| `npm run db:generate`    | Generate Prisma client             |
-| `npm run db:migrate:dev` | Run database migrations            |
-| `npm run db:studio`      | Open Prisma Studio                 |
+### Development
+
+| Script             | Description                        |
+| ------------------ | ---------------------------------- |
+| `npm run dev`      | Start all apps in development mode |
+| `npm run dev:api`  | Start backend only (port 3001)     |
+| `npm run dev:web`  | Start frontend only (port 3000)    |
+| `npm run build`    | Build all apps                     |
+| `npm run lint`     | Lint all apps                      |
+| `npm run format`   | Format code with Prettier          |
+| `npm run test`     | Run all tests                      |
+| `npm run test:cov` | Run tests with coverage            |
+| `npm run clean`    | Clean build artifacts              |
+
+### Database
+
+| Script                      | Description                            |
+| --------------------------- | -------------------------------------- |
+| `npm run db:generate`       | Generate Prisma client                 |
+| `npm run db:migrate:dev`    | Run migrations (development)           |
+| `npm run db:migrate:test`   | Run migrations against test database   |
+| `npm run db:migrate:deploy` | Run migrations (production)            |
+| `npm run db:push`           | Push schema changes without migrations |
+| `npm run db:studio`         | Open Prisma Studio                     |
+| `npm run db:seed`           | Seed database with initial data        |
+
+### Docker
+
+| Script                      | Description                           |
+| --------------------------- | ------------------------------------- |
+| `npm run docker:dev`        | Start dev containers                  |
+| `npm run docker:dev:build`  | Build and start dev containers        |
+| `npm run docker:dev:down`   | Stop dev containers                   |
+| `npm run docker:prod`       | Start production containers           |
+| `npm run docker:prod:build` | Build and start production containers |
+| `npm run docker:prod:down`  | Stop production containers            |
 
 ---
 
@@ -189,7 +244,36 @@ docker-compose -f docker-compose.yml up --build
 
 Once the API is running, visit:
 
-- Swagger UI: http://localhost:3001/api
+- **Swagger UI:** http://localhost:3001/api
+
+### API Endpoints Summary
+
+| Endpoint                        | Method | Description                        |
+| ------------------------------- | ------ | ---------------------------------- |
+| `/auths/register`               | POST   | Register a new user                |
+| `/auths/login`                  | POST   | Login and get JWT token            |
+| `/categories`                   | GET    | List all categories                |
+| `/categories/:id`               | GET    | Get category by ID                 |
+| `/categories`                   | POST   | Create a new category              |
+| `/categories/:id`               | PUT    | Update a category                  |
+| `/categories/:id`               | DELETE | Delete a category                  |
+| `/transactions`                 | GET    | List all transactions              |
+| `/transactions/:id`             | GET    | Get transaction by ID              |
+| `/transactions`                 | POST   | Create a new transaction           |
+| `/transactions/:id`             | PUT    | Update a transaction               |
+| `/transactions/:id`             | DELETE | Delete a transaction               |
+| `/budgets`                      | GET    | List all budgets                   |
+| `/budgets/:id`                  | GET    | Get budget by ID                   |
+| `/budgets/:id/details`          | GET    | Get budget with spending details   |
+| `/budgets/category/:categoryId` | GET    | Get budgets by category            |
+| `/budgets`                      | POST   | Create a new budget                |
+| `/budgets/:id`                  | PUT    | Update a budget                    |
+| `/budgets/:id`                  | DELETE | Delete a budget                    |
+| `/dashboard/monthly-summary`    | GET    | Get monthly income/expense summary |
+| `/dashboard/budget-vs-actual`   | GET    | Compare budgets vs actual spending |
+| `/dashboard/category-breakdown` | GET    | Get spending breakdown by category |
+| `/dashboard/top-expenses`       | GET    | Get top expense transactions       |
+| `/health`                       | GET    | Health check endpoint              |
 
 ---
 
