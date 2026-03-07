@@ -180,7 +180,7 @@ export default function TransactionsPage() {
   return (
     <AuthLayout>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Transactions</h2>
+        <h2 className="text-xl font-semibold text-foreground">Transactions</h2>
         <Link href="/transactions/new">
           <Button>New Transaction</Button>
         </Link>
@@ -245,15 +245,15 @@ export default function TransactionsPage() {
         </Button>
       </div>
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-card rounded-lg shadow">
         {isLoading ? (
           <TransactionsTableSkeleton />
         ) : transactions.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-muted-foreground">
             No transactions yet. Create your first transaction to get started.
           </div>
         ) : filteredTransactions.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-muted-foreground">
             No transactions match your filters.
           </div>
         ) : (
@@ -271,7 +271,7 @@ export default function TransactionsPage() {
             <TableBody>
               {filteredTransactions.map((transaction) => (
                 <TableRow key={transaction.id}>
-                  <TableCell className="text-gray-500">
+                  <TableCell className="text-muted-foreground">
                     {formatDate(transaction.date)}
                   </TableCell>
                   <TableCell className="font-medium">
@@ -284,8 +284,8 @@ export default function TransactionsPage() {
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         transaction.type === 'INCOME'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                       }`}
                     >
                       {transaction.type}

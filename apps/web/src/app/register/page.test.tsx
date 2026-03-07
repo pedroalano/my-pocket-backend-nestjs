@@ -80,7 +80,7 @@ describe('RegisterPage', () => {
       );
     });
 
-    expect(mockRouterPush).toHaveBeenCalledWith('/categories');
+    expect(mockRouterPush).toHaveBeenCalledWith('/dashboard');
   });
 
   it('shows error toast when email already exists', async () => {

@@ -24,7 +24,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
   if (isLoading || !isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
+        <p className="text-muted-foreground">Loading...</p>
       </div>
     );
   }
@@ -35,30 +35,30 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/dashboard">
-              <h1 className="text-2xl font-bold text-gray-900">My Pocket</h1>
+              <h1 className="text-2xl font-bold text-foreground">My Pocket</h1>
             </Link>
             <nav className="flex items-center gap-4">
               <Link
                 href="/dashboard"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
               >
                 Dashboard
               </Link>
               <Link
                 href="/categories"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
               >
                 Categories
               </Link>
               <Link
                 href="/budgets"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
               >
                 Budgets
               </Link>
               <Link
                 href="/transactions"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
               >
                 Transactions
               </Link>

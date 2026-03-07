@@ -81,15 +81,13 @@ function getUtilizationTextColor(
   budgetType: BudgetType,
 ): string {
   if (budgetType === BudgetType.INCOME) {
-    // For INCOME: higher percentage is better
-    if (percentage >= 75) return 'text-green-600';
-    if (percentage >= 50) return 'text-yellow-600';
-    return 'text-red-600';
+    if (percentage >= 75) return 'text-green-600 dark:text-green-400';
+    if (percentage >= 50) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   }
-  // For EXPENSE: lower percentage is better
-  if (percentage >= 100) return 'text-red-600';
-  if (percentage >= 75) return 'text-yellow-600';
-  return 'text-green-600';
+  if (percentage >= 100) return 'text-red-600 dark:text-red-400';
+  if (percentage >= 75) return 'text-yellow-600 dark:text-yellow-400';
+  return 'text-green-600 dark:text-green-400';
 }
 
 function getProgressValue(budget: BudgetWithDetails): string {
@@ -130,8 +128,8 @@ export function BudgetDetails({ budget }: BudgetDetailsProps) {
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 budget.type === BudgetType.INCOME
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-red-100 text-red-800'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
               }`}
               data-testid="budget-type-badge"
             >
@@ -160,7 +158,7 @@ export function BudgetDetails({ budget }: BudgetDetailsProps) {
               </span>
             </div>
             <div
-              className="h-3 w-full rounded-full bg-gray-200 overflow-hidden"
+              className="h-3 w-full rounded-full bg-muted overflow-hidden"
               data-testid="progress-bar-container"
             >
               <div
@@ -173,22 +171,22 @@ export function BudgetDetails({ budget }: BudgetDetailsProps) {
 
           {/* Spent/Earned and Remaining */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 rounded-lg bg-gray-50">
+            <div className="p-4 rounded-lg bg-muted/50">
               <p className="text-sm text-muted-foreground">{progressLabel}</p>
               <p
-                className="text-lg font-semibold text-gray-900"
+                className="text-lg font-semibold text-foreground"
                 data-testid="budget-progress-value"
               >
                 {formatAmount(progressValue)}
               </p>
             </div>
-            <div className="p-4 rounded-lg bg-gray-50">
+            <div className="p-4 rounded-lg bg-muted/50">
               <p className="text-sm text-muted-foreground">Remaining</p>
               <p
                 className={`text-lg font-semibold ${
                   parseFloat(budget.remaining) < 0
-                    ? 'text-red-600'
-                    : 'text-gray-900'
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-foreground'
                 }`}
                 data-testid="budget-remaining"
               >

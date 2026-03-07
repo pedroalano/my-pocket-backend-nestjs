@@ -142,22 +142,22 @@ export default function DashboardPage() {
     <AuthLayout>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Dashboard</h2>
+        <h2 className="text-xl font-semibold text-foreground">Dashboard</h2>
         <div className="flex items-center gap-2">
           <button
             onClick={goToPrev}
             aria-label="Previous month"
-            className="p-1 rounded hover:bg-gray-100 text-gray-600"
+            className="p-1 rounded hover:bg-muted text-muted-foreground"
           >
             ←
           </button>
-          <span className="text-sm font-medium text-gray-700 min-w-[120px] text-center">
+          <span className="text-sm font-medium text-foreground min-w-[120px] text-center">
             {formatMonthYear(currentDate)}
           </span>
           <button
             onClick={goToNext}
             aria-label="Next month"
-            className="p-1 rounded hover:bg-gray-100 text-gray-600"
+            className="p-1 rounded hover:bg-muted text-muted-foreground"
           >
             →
           </button>
@@ -170,35 +170,35 @@ export default function DashboardPage() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-lg shadow p-6 animate-pulse"
+              className="bg-card rounded-lg shadow p-6 animate-pulse"
             >
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-3" />
-              <div className="h-8 bg-gray-200 rounded w-3/4" />
+              <div className="h-4 bg-muted rounded w-1/2 mb-3" />
+              <div className="h-8 bg-muted rounded w-3/4" />
             </div>
           ))}
         </div>
       ) : summaryError ? (
-        <div className="bg-white rounded-lg shadow p-6 mb-6 text-center text-gray-500">
+        <div className="bg-card rounded-lg shadow p-6 mb-6 text-center text-muted-foreground">
           Failed to load monthly summary.
         </div>
       ) : summary ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500 mb-1">Total Income</p>
-            <p className="text-2xl font-bold text-green-600">
+          <div className="bg-card rounded-lg shadow p-6">
+            <p className="text-sm text-muted-foreground mb-1">Total Income</p>
+            <p className="text-2xl font-bold text-green-600 dark:text-green-400">
               {formatCurrency(summary.totalIncome)}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500 mb-1">Total Expenses</p>
-            <p className="text-2xl font-bold text-red-600">
+          <div className="bg-card rounded-lg shadow p-6">
+            <p className="text-sm text-muted-foreground mb-1">Total Expenses</p>
+            <p className="text-2xl font-bold text-red-600 dark:text-red-400">
               {formatCurrency(summary.totalExpense)}
             </p>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-500 mb-1">Balance</p>
+          <div className="bg-card rounded-lg shadow p-6">
+            <p className="text-sm text-muted-foreground mb-1">Balance</p>
             <p
-              className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-blue-600' : 'text-red-600'}`}
+              className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-red-600 dark:text-red-400'}`}
             >
               {formatCurrency(summary.balance)}
             </p>
@@ -212,22 +212,22 @@ export default function DashboardPage() {
           {[0, 1].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-lg shadow p-6 animate-pulse"
+              className="bg-card rounded-lg shadow p-6 animate-pulse"
             >
-              <div className="h-4 bg-gray-200 rounded w-1/3 mb-4" />
-              <div className="h-48 bg-gray-200 rounded" />
+              <div className="h-4 bg-muted rounded w-1/3 mb-4" />
+              <div className="h-48 bg-muted rounded" />
             </div>
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           {/* Category Breakdown Pie Chart */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">
+          <div className="bg-card rounded-lg shadow p-6">
+            <h3 className="text-base font-semibold text-foreground mb-4">
               Category Breakdown
             </h3>
             {categoryBreakdown.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center py-8">
+              <p className="text-muted-foreground text-sm text-center py-8">
                 No category data for this period.
               </p>
             ) : (
@@ -268,12 +268,12 @@ export default function DashboardPage() {
           </div>
 
           {/* Budget vs Actual Bar Chart */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">
+          <div className="bg-card rounded-lg shadow p-6">
+            <h3 className="text-base font-semibold text-foreground mb-4">
               Budget vs Actual
             </h3>
             {budgetVsActual.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center py-8">
+              <p className="text-muted-foreground text-sm text-center py-8">
                 No budget data for this period.
               </p>
             ) : (
@@ -300,9 +300,9 @@ export default function DashboardPage() {
       )}
 
       {/* Top Expenses Table */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-card rounded-lg shadow">
         <div className="p-6 border-b">
-          <h3 className="text-base font-semibold text-gray-900">
+          <h3 className="text-base font-semibold text-foreground">
             Top Expenses
           </h3>
         </div>
@@ -310,31 +310,31 @@ export default function DashboardPage() {
           <div className="p-6 animate-pulse">
             {[0, 1, 2, 3, 4].map((i) => (
               <div key={i} className="flex gap-4 mb-3">
-                <div className="h-4 bg-gray-200 rounded w-1/4" />
-                <div className="h-4 bg-gray-200 rounded w-1/4" />
-                <div className="h-4 bg-gray-200 rounded w-1/4" />
-                <div className="h-4 bg-gray-200 rounded w-1/4" />
+                <div className="h-4 bg-muted rounded w-1/4" />
+                <div className="h-4 bg-muted rounded w-1/4" />
+                <div className="h-4 bg-muted rounded w-1/4" />
+                <div className="h-4 bg-muted rounded w-1/4" />
               </div>
             ))}
           </div>
         ) : topExpenses.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-muted-foreground">
             No expenses for this period.
           </div>
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="px-6 py-3 text-left font-medium text-gray-500">
+              <tr className="border-b bg-muted/50">
+                <th className="px-6 py-3 text-left font-medium text-muted-foreground">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left font-medium text-gray-500">
+                <th className="px-6 py-3 text-left font-medium text-muted-foreground">
                   Category
                 </th>
-                <th className="px-6 py-3 text-left font-medium text-gray-500">
+                <th className="px-6 py-3 text-left font-medium text-muted-foreground">
                   Description
                 </th>
-                <th className="px-6 py-3 text-right font-medium text-gray-500">
+                <th className="px-6 py-3 text-right font-medium text-muted-foreground">
                   Amount
                 </th>
               </tr>
@@ -342,16 +342,16 @@ export default function DashboardPage() {
             <tbody>
               {topExpenses.map((expense) => (
                 <tr key={expense.id} className="border-b last:border-0">
-                  <td className="px-6 py-4 text-gray-500">
+                  <td className="px-6 py-4 text-muted-foreground">
                     {formatDate(expense.date)}
                   </td>
                   <td className="px-6 py-4 font-medium">
                     {expense.category.name}
                   </td>
-                  <td className="px-6 py-4 text-gray-500">
+                  <td className="px-6 py-4 text-muted-foreground">
                     {expense.description ?? '—'}
                   </td>
-                  <td className="px-6 py-4 text-right font-medium text-red-600">
+                  <td className="px-6 py-4 text-right font-medium text-red-600 dark:text-red-400">
                     {formatCurrency(expense.amount)}
                   </td>
                 </tr>

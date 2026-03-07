@@ -85,7 +85,7 @@ export default function BudgetDetailsPage() {
   return (
     <AuthLayout>
       <div className="max-w-3xl mx-auto">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">
+        <h2 className="text-xl font-semibold text-foreground mb-6">
           Budget Details
         </h2>
         {isLoading ? (

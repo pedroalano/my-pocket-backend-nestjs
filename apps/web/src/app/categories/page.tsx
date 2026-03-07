@@ -107,7 +107,7 @@ export default function CategoriesPage() {
   return (
     <AuthLayout>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Categories</h2>
+        <h2 className="text-xl font-semibold text-foreground">Categories</h2>
         <Link href="/categories/new">
           <Button>New Category</Button>
         </Link>
@@ -135,15 +135,15 @@ export default function CategoriesPage() {
         </Select>
       </div>
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-card rounded-lg shadow">
         {isLoading ? (
           <CategoriesTableSkeleton />
         ) : categories.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-muted-foreground">
             No categories yet. Create your first category to get started.
           </div>
         ) : filteredCategories.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-muted-foreground">
             No categories match your search.
           </div>
         ) : (
@@ -164,14 +164,14 @@ export default function CategoriesPage() {
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         category.type === 'INCOME'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                       }`}
                     >
                       {category.type}
                     </span>
                   </TableCell>
-                  <TableCell className="text-gray-500">
+                  <TableCell className="text-muted-foreground">
                     {new Date(category.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right space-x-2">

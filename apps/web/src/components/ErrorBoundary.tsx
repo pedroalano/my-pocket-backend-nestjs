@@ -46,11 +46,11 @@ export class ErrorBoundary extends Component<
   render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-background px-4">
           <Card className="w-full max-w-md">
             <CardHeader className="text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+                <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
               </div>
               <CardTitle className="text-2xl font-bold">
                 Something went wrong
@@ -62,8 +62,8 @@ export class ErrorBoundary extends Component<
             </CardHeader>
             {this.state.error && (
               <CardContent>
-                <div className="rounded-md bg-gray-100 p-3">
-                  <p className="text-sm text-gray-600 font-mono break-all">
+                <div className="rounded-md bg-muted p-3">
+                  <p className="text-sm text-muted-foreground font-mono break-all">
                     {this.state.error.message}
                   </p>
                 </div>

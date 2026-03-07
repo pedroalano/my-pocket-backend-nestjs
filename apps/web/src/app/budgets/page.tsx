@@ -103,15 +103,13 @@ function getUtilizationColor(
 ): string {
   if (percentage === undefined) return '';
   if (budgetType === BudgetType.INCOME) {
-    // For INCOME: higher percentage is better (more earned toward goal)
-    if (percentage >= 75) return 'text-green-600';
-    if (percentage >= 50) return 'text-yellow-600';
-    return 'text-red-600';
+    if (percentage >= 75) return 'text-green-600 dark:text-green-400';
+    if (percentage >= 50) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   }
-  // For EXPENSE: lower percentage is better (less spent)
-  if (percentage >= 100) return 'text-red-600';
-  if (percentage >= 75) return 'text-yellow-600';
-  return 'text-green-600';
+  if (percentage >= 100) return 'text-red-600 dark:text-red-400';
+  if (percentage >= 75) return 'text-yellow-600 dark:text-yellow-400';
+  return 'text-green-600 dark:text-green-400';
 }
 
 export default function BudgetsPage() {
@@ -250,7 +248,7 @@ export default function BudgetsPage() {
   return (
     <AuthLayout>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-gray-900">Budgets</h2>
+        <h2 className="text-xl font-semibold text-foreground">Budgets</h2>
         <Link href="/budgets/new">
           <Button>New Budget</Button>
         </Link>
@@ -333,15 +331,15 @@ export default function BudgetsPage() {
         </p>
       )}
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-card rounded-lg shadow">
         {isLoading ? (
           <BudgetsTableSkeleton />
         ) : budgets.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-muted-foreground">
             No budgets yet. Create your first budget to get started.
           </div>
         ) : filteredBudgets.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-muted-foreground">
             No budgets match your filters.
           </div>
         ) : (
@@ -381,7 +379,7 @@ export default function BudgetsPage() {
                         <TableCell
                           className={
                             parseFloat(budget.remaining || '0') < 0
-                              ? 'text-red-600'
+                              ? 'text-red-600 dark:text-red-400'
                               : ''
                           }
                         >
@@ -394,15 +392,15 @@ export default function BudgetsPage() {
                         </TableCell>
                       </>
                     )}
-                    <TableCell className="text-gray-500">
+                    <TableCell className="text-muted-foreground">
                       {formatPeriod(budget.month, budget.year)}
                     </TableCell>
                     <TableCell>
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           budget.type === 'INCOME'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                         }`}
                       >
                         {budget.type}

@@ -19,16 +19,16 @@ export default function Home() {
   if (isLoading) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-24">
-        <p className="text-gray-500">Loading...</p>
+        <p className="text-muted-foreground">Loading...</p>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-50">
+    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-background">
       <div className="text-center">
         <h1 className="text-4xl font-bold mb-4">My Pocket</h1>
-        <p className="text-lg text-gray-600 mb-8">
+        <p className="text-lg text-muted-foreground mb-8">
           Personal Finance Management
         </p>
         <div className="flex gap-4 justify-center">

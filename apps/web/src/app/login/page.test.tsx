@@ -53,7 +53,7 @@ describe('LoginPage', () => {
     expect(signUpLink).toHaveAttribute('href', '/register');
   });
 
-  it('successful login shows success toast and redirects to categories', async () => {
+  it('successful login shows success toast and redirects to dashboard', async () => {
     const user = userEvent.setup();
     const { toast } = await import('sonner');
 
@@ -67,7 +67,7 @@ describe('LoginPage', () => {
       expect(toast.success).toHaveBeenCalledWith('Login successful!');
     });
 
-    expect(mockRouterPush).toHaveBeenCalledWith('/categories');
+    expect(mockRouterPush).toHaveBeenCalledWith('/dashboard');
   });
 
   it('shows error toast with API message on invalid credentials', async () => {
