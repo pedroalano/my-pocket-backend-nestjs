@@ -63,6 +63,7 @@ This is a **Turborepo + npm workspaces** monorepo:
 **NestJS modular architecture** under `src/modules/`:
 - `auths` — registration, login, JWT strategy (`jwt.strategy.ts`), guard (`jwt-auth.guard.ts`)
 - `categories`, `transactions`, `budgets`, `dashboard` — domain modules, each with controller/service/dto
+- `health` — single `GET /health` endpoint for service availability checks
 - `shared` — exports `PrismaService` (extends `PrismaClient`) and `formatDecimal` utility; imported as `SharedModule` globally
 - `config` — env loading via `ConfigModule.forRoot`, Joi validation schema (`env.validation.ts`), typed config accessors
 - `common/filters` — global `HttpExceptionFilter`
@@ -95,9 +96,13 @@ This is a **Turborepo + npm workspaces** monorepo:
 
 **Testing stack:** Vitest + Testing Library + `msw` for HTTP mocking. MSW handlers live in `src/test/mocks/handlers.ts`; the server is set up in `src/test/setup.ts`.
 
-**UI:** shadcn/ui components in `src/components/ui/` (auto-generated, don't hand-edit). Feature components (`CategoryForm`, `TransactionForm`, `BudgetForm`, `BudgetDetails`) live directly in `src/components/`. Charts use `recharts` (PieChart, BarChart) in the dashboard page.
+**Theme:** `ThemeProvider` (`src/contexts/ThemeProvider.tsx`) wraps the root layout and wires up `next-themes` with `attribute="class"`. The `ThemeToggle` component (`src/components/ThemeToggle.tsx`) renders a dropdown (Light / Dark / System) in the `AuthLayout` header. All page backgrounds and text use semantic Tailwind tokens (`bg-background`, `text-foreground`, `text-muted-foreground`, etc.) so they respond to the active theme.
 
-**Post-login landing page:** `/dashboard` — authenticated users are redirected there from `/`.
+**Error handling:** `ErrorBoundary` (`src/components/ErrorBoundary.tsx`) is a React class component wrapping the entire app in `layout.tsx`. It catches unhandled render errors and shows a recovery UI with a "Try Again" button.
+
+**UI:** shadcn/ui components in `src/components/ui/` (auto-generated, don't hand-edit). Feature components (`CategoryForm`, `TransactionForm`, `BudgetForm`, `BudgetDetails`, `ThemeToggle`) live directly in `src/components/`. Charts use `recharts` (PieChart, BarChart) in the dashboard page.
+
+**Post-login landing page:** `/dashboard` — authenticated users are redirected there from `/` and after login/registration.
 
 ### Shared Package (`packages/shared`)
 Contains TypeScript interfaces (`ApiResponse`, `PaginatedResponse`, base entity types) and enums (`TransactionType`, `BudgetType`) used by both apps. Import as `@my-pocket/shared`.

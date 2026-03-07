@@ -43,8 +43,10 @@ my-pocket/
 - **UI Components:** shadcn/ui, Radix UI
 - **Icons:** Lucide React
 - **Notifications:** Sonner
+- **Charts:** Recharts
+- **Theme:** next-themes (Light / Dark / System)
 - **Bundler:** Turbopack
-- **Testing:** Vitest + Testing Library
+- **Testing:** Vitest + Testing Library + MSW
 
 ### Shared (packages/shared)
 
@@ -244,7 +246,7 @@ npm run docker:prod:down
 
 Once the API is running, visit:
 
-- **Swagger UI:** http://localhost:3001/api
+- **Swagger UI:** http://localhost:3001/docs
 
 ### API Endpoints Summary
 
@@ -277,8 +279,9 @@ Once the API is running, visit:
 
 ---
 
-## 📋 API Features
+## 📋 Features
 
+### API
 - ✅ User registration and authentication with JWT
 - ✅ Protected routes with authentication guards
 - ✅ Categories, Transactions, and Budgets management
@@ -287,7 +290,15 @@ Once the API is running, visit:
 - ✅ Strict per-user data isolation
 - ✅ Comprehensive validation using DTOs
 - ✅ Global exception handling
-- ✅ Interactive API documentation (Swagger/OpenAPI)
+- ✅ Interactive API documentation (Swagger/OpenAPI at `/docs`)
+
+### Frontend
+- ✅ Dashboard as post-login landing page with charts and monthly summary
+- ✅ Dark / Light / System theme toggle (persisted via `localStorage`)
+- ✅ Full CRUD for Categories, Transactions, and Budgets
+- ✅ Budget spending tracking with utilization indicators
+- ✅ Responsive design with shadcn/ui components
+- ✅ Error boundary with recovery UI
 
 ---
 
