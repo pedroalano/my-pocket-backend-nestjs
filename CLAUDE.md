@@ -83,6 +83,8 @@ This is a **Turborepo + npm workspaces** monorepo:
 
 **Swagger** is served at `/docs` (not `/api`).
 
+**i18n:** `nestjs-i18n` with `AcceptLanguageResolver`. Translation JSON files in `src/i18n/en/` and `src/i18n/pt-BR/` (one file per module: `auth`, `categories`, `transactions`, `budgets`, `dashboard`, `validation`). All service error messages use `this.i18n.t('module.errors.key', { args, lang })`. `I18nValidationPipe` and `I18nValidationExceptionFilter` replace the default NestJS pipe in `main.ts`. In unit tests, mock `I18nService` as `{ t: jest.fn((key) => key) }`.
+
 ### Frontend (`apps/web`)
 
 **Next.js 15 App Router** with colocated page tests (`page.test.tsx`).
@@ -90,17 +92,20 @@ This is a **Turborepo + npm workspaces** monorepo:
 **Auth:** `AuthContext` (`src/contexts/AuthContext.tsx`) stores the JWT in `localStorage`. User info is decoded client-side from the JWT payload.
 
 **API layer:**
-- `src/lib/api.ts` — `apiRequest` base function (fetch + Bearer token injection + error handling), exported as `api.get/post/put/delete`
+- `src/lib/api.ts` — `apiRequest` base function (fetch + Bearer token injection + `Accept-Language` header + error handling), exported as `api.get/post/put/delete`
 - `src/lib/categories.ts`, `transactions.ts`, `budgets.ts`, `dashboard.ts` — domain-specific API helpers built on `api`
+- `src/lib/formatters.ts` — locale-aware `formatCurrency` / `formatCurrencyFromString` / `formatDate` / `formatMonthYear`; pass the locale from `useLocale()` (next-intl)
 - `ApiException` is thrown for non-2xx responses, carrying `statusCode` and message
 
-**Testing stack:** Vitest + Testing Library + `msw` for HTTP mocking. MSW handlers live in `src/test/mocks/handlers.ts`; the server is set up in `src/test/setup.ts`.
+**Testing stack:** Vitest + Testing Library + `msw` for HTTP mocking. MSW handlers live in `src/test/mocks/handlers.ts`; the server is set up in `src/test/setup.ts`. `renderWithProviders` in `src/test/test-utils.tsx` wraps the tree with `NextIntlClientProvider locale="en"` so all components can call `useTranslations`.
 
 **Theme:** `ThemeProvider` (`src/contexts/ThemeProvider.tsx`) wraps the root layout and wires up `next-themes` with `attribute="class"`. The `ThemeToggle` component (`src/components/ThemeToggle.tsx`) renders a dropdown (Light / Dark / System) in the `AuthLayout` header. All page backgrounds and text use semantic Tailwind tokens (`bg-background`, `text-foreground`, `text-muted-foreground`, etc.) so they respond to the active theme.
 
-**Error handling:** `ErrorBoundary` (`src/components/ErrorBoundary.tsx`) is a React class component wrapping the entire app in `layout.tsx`. It catches unhandled render errors and shows a recovery UI with a "Try Again" button.
+**i18n:** `next-intl` with cookie-based locale (`NEXT_LOCALE`). Locale resolver at `src/i18n/request.ts`. Message files at `messages/en.json` and `messages/pt-BR.json`. Root layout is `async` and wraps with `NextIntlClientProvider`. The `LanguageToggle` component (`src/components/LanguageToggle.tsx`) in `AuthLayout` sets the cookie and calls `router.refresh()`. All pages/components use `useTranslations(namespace)` — never hardcode UI strings. Month labels come from the `months` namespace (1–12). The `Accept-Language` header is derived from the `NEXT_LOCALE` cookie in `src/lib/api.ts` so backend errors arrive in the active language.
 
-**UI:** shadcn/ui components in `src/components/ui/` (auto-generated, don't hand-edit). Feature components (`CategoryForm`, `TransactionForm`, `BudgetForm`, `BudgetDetails`, `ThemeToggle`) live directly in `src/components/`. Charts use `recharts` (PieChart, BarChart) in the dashboard page.
+**Error handling:** `ErrorBoundary` (`src/components/ErrorBoundary.tsx`) wraps the app in `layout.tsx`. It is implemented as a functional component (`ErrorBoundary`) that renders an inner class component (`ErrorBoundaryInner`) — this allows the outer wrapper to call `useTranslations` while the class component handles `componentDidCatch`.
+
+**UI:** shadcn/ui components in `src/components/ui/` (auto-generated, don't hand-edit). Feature components (`CategoryForm`, `TransactionForm`, `BudgetForm`, `BudgetDetails`, `ThemeToggle`, `LanguageToggle`) live directly in `src/components/`. Charts use `recharts` (PieChart, BarChart) in the dashboard page.
 
 **Post-login landing page:** `/dashboard` — authenticated users are redirected there from `/` and after login/registration.
 
@@ -131,6 +136,8 @@ All data access is scoped by `userId`. Cascade deletes are set on all foreign ke
 - Always scope data queries by `userId` to enforce per-user data isolation
 - New backend modules must follow the pattern: controller / service / dto
 - New frontend API calls must go through `src/lib/` helpers, never fetch directly in components
+- Never hardcode UI strings — always use `useTranslations(namespace)` and add keys to both `messages/en.json` and `messages/pt-BR.json`
+- Never hardcode backend error strings — always use `this.i18n.t('module.errors.key', { args, lang })` and add keys to both `src/i18n/en/*.json` and `src/i18n/pt-BR/*.json`
 
 ## Testing Conventions
 

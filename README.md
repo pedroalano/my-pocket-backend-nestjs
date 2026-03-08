@@ -33,6 +33,7 @@ my-pocket/
 - **ORM:** Prisma
 - **Authentication:** JWT + Passport
 - **Validation:** class-validator & class-transformer
+- **i18n:** nestjs-i18n (EN / PT-BR, Accept-Language header)
 - **Testing:** Jest
 
 ### Frontend (apps/web)
@@ -45,6 +46,7 @@ my-pocket/
 - **Notifications:** Sonner
 - **Charts:** Recharts
 - **Theme:** next-themes (Light / Dark / System)
+- **i18n:** next-intl (EN / PT-BR, cookie-based)
 - **Bundler:** Turbopack
 - **Testing:** Vitest + Testing Library + MSW
 
@@ -291,10 +293,13 @@ Once the API is running, visit:
 - ✅ Comprehensive validation using DTOs
 - ✅ Global exception handling
 - ✅ Interactive API documentation (Swagger/OpenAPI at `/docs`)
+- ✅ Internationalized error messages (EN / PT-BR via `Accept-Language` header)
 
 ### Frontend
 - ✅ Dashboard as post-login landing page with charts and monthly summary
 - ✅ Dark / Light / System theme toggle (persisted via `localStorage`)
+- ✅ EN / PT-BR language toggle in header (persisted via `NEXT_LOCALE` cookie)
+- ✅ Locale-aware currency formatting (USD for EN, BRL for PT-BR)
 - ✅ Full CRUD for Categories, Transactions, and Budgets
 - ✅ Budget spending tracking with utilization indicators
 - ✅ Responsive design with shadcn/ui components
