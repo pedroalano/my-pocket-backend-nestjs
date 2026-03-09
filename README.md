@@ -80,7 +80,11 @@ DATABASE_URL="postgresql://user:password@localhost:5432/my_pocket_db?schema=publ
 
 # JWT Authentication (secret must be >= 32 chars)
 JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
-JWT_EXPIRATION=3600
+JWT_EXPIRATION=900          # Access token TTL in seconds (15 minutes)
+JWT_REFRESH_EXPIRATION=604800  # Refresh token TTL in seconds (7 days)
+
+# CORS
+CORS_ORIGINS=http://localhost:3000
 ```
 
 For the frontend, create `apps/web/.env.local`:
@@ -256,6 +260,8 @@ Once the API is running, visit:
 | ------------------------------- | ------ | ---------------------------------- |
 | `/auths/register`               | POST   | Register a new user                |
 | `/auths/login`                  | POST   | Login and get JWT token            |
+| `/auths/refresh`                | POST   | Exchange refresh token for new access + refresh tokens |
+| `/auths/logout`                 | POST   | Invalidate current refresh token (requires Bearer auth) |
 | `/categories`                   | GET    | List all categories                |
 | `/categories/:id`               | GET    | Get category by ID                 |
 | `/categories`                   | POST   | Create a new category              |
@@ -294,6 +300,11 @@ Once the API is running, visit:
 - ✅ Global exception handling
 - ✅ Interactive API documentation (Swagger/OpenAPI at `/docs`)
 - ✅ Internationalized error messages (EN / PT-BR via `Accept-Language` header)
+- ✅ Rate limiting on auth endpoints (5 req/min) and refresh (10 req/min)
+- ✅ Helmet security headers
+- ✅ CORS restricted to configured origins
+- ✅ Password complexity enforcement on registration (uppercase + lowercase + digit)
+- ✅ Short-lived access tokens (15 min) + revocable refresh tokens (7 days)
 
 ### Frontend
 - ✅ Dashboard as post-login landing page with charts and monthly summary

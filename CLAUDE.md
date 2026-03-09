@@ -22,7 +22,7 @@ npm run test:cov                      # With coverage
 # API unit tests (Jest, NODE_ENV=test)
 cd apps/api && npm run test           # All unit tests
 cd apps/api && npm run test:watch     # Watch mode
-cd apps/api && npm test -- --testPathPattern=auths  # Single module
+cd apps/api && npm test -- --testPathPatterns=auths  # Single module
 
 # API e2e tests
 cd apps/api && npm run test:e2e       # Requires test DB running on port 5433
@@ -61,7 +61,7 @@ This is a **Turborepo + npm workspaces** monorepo:
 ### Backend (`apps/api`)
 
 **NestJS modular architecture** under `src/modules/`:
-- `auths` — registration, login, JWT strategy (`jwt.strategy.ts`), guard (`jwt-auth.guard.ts`)
+- `auths` — registration, login, logout, refresh token rotation; JWT strategy (`jwt.strategy.ts`), guard (`jwt-auth.guard.ts`)
 - `categories`, `transactions`, `budgets`, `dashboard` — domain modules, each with controller/service/dto
 - `health` — single `GET /health` endpoint for service availability checks
 - `shared` — exports `PrismaService` (extends `PrismaClient`) and `formatDecimal` utility; imported as `SharedModule` globally
@@ -71,6 +71,8 @@ This is a **Turborepo + npm workspaces** monorepo:
 **Request flow:** Controller → `JwtAuthGuard` → Service → `PrismaService`
 
 **JWT payload:** `{ userId, email }` — controllers extract `userId` from the request user object to enforce per-user data isolation in every query.
+
+**Auth response:** `{ access_token: string; refresh_token: string }`. Access token expires in 15 min; refresh token expires in 7 days and is stored as a bcrypt hash in `User.refreshToken`. Use `POST /auths/refresh` with the refresh token to rotate both tokens. Use `POST /auths/logout` (JWT-guarded) to revoke.
 
 **Env file resolution** (in `app.module.ts`):
 - `NODE_ENV=test` → `.env.test`
@@ -114,7 +116,7 @@ Contains TypeScript interfaces (`ApiResponse`, `PaginatedResponse`, base entity 
 
 ### Database Schema
 Four models in `prisma/schema.prisma`:
-- `User` — owns all other entities
+- `User` — owns all other entities; `refreshToken String?` stores the bcrypt hash of the active refresh token (null after logout)
 - `Category` — `(name, type, userId)` unique; type is `INCOME | EXPENSE`
 - `Transaction` — linked to a category; amount stored as `Decimal(10,2)`
 - `Budget` — `(categoryId, month, year, userId)` unique; tracks budget per category per month
