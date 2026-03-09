@@ -12,7 +12,9 @@ import {
   TopExpense,
 } from '@/types';
 import { AuthLayout } from '@/components/layouts/AuthLayout';
+import { Button } from '@/components/ui/button';
 import { ApiException } from '@/lib/api';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency, formatDate, formatMonthYear } from '@/lib/formatters';
 import {
   PieChart,
@@ -130,23 +132,25 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-foreground">{t('title')}</h2>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             onClick={goToPrev}
             aria-label={t('previousMonth')}
-            className="p-1 rounded hover:bg-muted text-muted-foreground"
           >
-            ←
-          </button>
+            <ChevronLeft className="size-4" />
+          </Button>
           <span className="text-sm font-medium text-foreground min-w-[120px] text-center">
             {formatMonthYear(currentDate, locale)}
           </span>
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             onClick={goToNext}
             aria-label={t('nextMonth')}
-            className="p-1 rounded hover:bg-muted text-muted-foreground"
           >
-            →
-          </button>
+            <ChevronRight className="size-4" />
+          </Button>
         </div>
       </div>
 
