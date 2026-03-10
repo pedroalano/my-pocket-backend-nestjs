@@ -4,6 +4,16 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+const CSP_DIRECTIVES = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'", // 'unsafe-inline' required by Next.js hydration
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  `connect-src 'self' ${API_URL}`,
+  "frame-ancestors 'none'",
+].join('; ');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
@@ -21,18 +31,10 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=()',
           },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data:",
-              "font-src 'self'",
-              `connect-src 'self' ${API_URL}`,
-              "frame-ancestors 'none'",
-            ].join('; '),
-          },
+          // CSP only in production — Turbopack dev server requires inline scripts for HMR
+          ...(process.env.NODE_ENV === 'production'
+            ? [{ key: 'Content-Security-Policy', value: CSP_DIRECTIVES }]
+            : []),
         ],
       },
     ];
