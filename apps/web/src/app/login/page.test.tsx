@@ -28,7 +28,6 @@ vi.mock('sonner', () => ({
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(localStorage.getItem).mockReturnValue(null);
   });
 
   it('renders email and password inputs', () => {
@@ -187,7 +186,7 @@ describe('LoginPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('stores token in localStorage on successful login', async () => {
+  it('stores refresh token in cookie on successful login', async () => {
     const user = userEvent.setup();
 
     renderWithProviders(<LoginPage />);
@@ -197,7 +196,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
 
     await waitFor(() => {
-      expect(localStorage.setItem).toHaveBeenCalled();
+      expect(document.cookie).toContain('refresh_token=');
     });
   });
 

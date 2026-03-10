@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AuthProvider, useAuth } from './AuthContext';
-import { mockToken, mockUser } from '@/test/mocks/handlers';
+import { mockToken, mockRefreshToken, mockUser } from '@/test/mocks/handlers';
 
 // Test component that uses the auth context
 function TestComponent() {
@@ -39,10 +39,15 @@ function TestComponent() {
 
 describe('AuthContext', () => {
   beforeEach(() => {
-    vi.mocked(localStorage.getItem).mockReturnValue(null);
+    // Ensure no refresh token cookie is set before each test
+    document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Strict';
   });
 
-  it('should provide initial unauthenticated state', async () => {
+  afterEach(() => {
+    document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Strict';
+  });
+
+  it('should provide initial unauthenticated state when no cookie', async () => {
     render(
       <AuthProvider>
         <TestComponent />
@@ -57,8 +62,8 @@ describe('AuthContext', () => {
     expect(screen.getByTestId('user')).toHaveTextContent('none');
   });
 
-  it('should load user from localStorage on mount', async () => {
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
+  it('should restore session from valid refresh token cookie', async () => {
+    document.cookie = `refresh_token=${mockRefreshToken}; path=/`;
 
     render(
       <AuthProvider>
@@ -67,15 +72,15 @@ describe('AuthContext', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('loading')).toHaveTextContent('ready');
+      expect(screen.getByTestId('authenticated')).toHaveTextContent('yes');
     });
 
-    expect(screen.getByTestId('authenticated')).toHaveTextContent('yes');
     expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email);
+    expect(screen.getByTestId('loading')).toHaveTextContent('ready');
   });
 
-  it('should clear invalid token from localStorage', async () => {
-    vi.mocked(localStorage.getItem).mockReturnValue('invalid-token');
+  it('should clear cookie and stay unauthenticated when refresh token is invalid', async () => {
+    document.cookie = 'refresh_token=invalid-token-value; path=/';
 
     render(
       <AuthProvider>
@@ -87,11 +92,11 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('loading')).toHaveTextContent('ready');
     });
 
-    expect(localStorage.removeItem).toHaveBeenCalledWith('token');
     expect(screen.getByTestId('authenticated')).toHaveTextContent('no');
+    expect(document.cookie).not.toContain('invalid-token-value');
   });
 
-  it('should login successfully', async () => {
+  it('should login successfully and set refresh token cookie', async () => {
     const user = userEvent.setup();
 
     render(
@@ -110,11 +115,11 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('authenticated')).toHaveTextContent('yes');
     });
 
-    expect(localStorage.setItem).toHaveBeenCalledWith('token', mockToken);
+    expect(document.cookie).toContain('refresh_token=');
     expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email);
   });
 
-  it('should register successfully', async () => {
+  it('should register successfully and set refresh token cookie', async () => {
     const user = userEvent.setup();
 
     render(
@@ -133,12 +138,12 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('authenticated')).toHaveTextContent('yes');
     });
 
-    expect(localStorage.setItem).toHaveBeenCalledWith('token', mockToken);
+    expect(document.cookie).toContain('refresh_token=');
   });
 
-  it('should logout successfully', async () => {
+  it('should logout successfully and clear cookie', async () => {
     const user = userEvent.setup();
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
+    document.cookie = `refresh_token=${mockRefreshToken}; path=/`;
 
     render(
       <AuthProvider>
@@ -156,8 +161,8 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('authenticated')).toHaveTextContent('no');
     });
 
-    expect(localStorage.removeItem).toHaveBeenCalledWith('token');
     expect(screen.getByTestId('user')).toHaveTextContent('none');
+    expect(document.cookie).not.toContain(mockRefreshToken);
   });
 
   it('should throw error when useAuth is used outside provider', () => {

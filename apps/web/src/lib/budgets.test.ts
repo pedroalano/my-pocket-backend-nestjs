@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { budgetsApi } from './budgets';
 import { BudgetType } from '@/types';
-import { ApiException } from './api';
+import { ApiException, setAccessToken } from './api';
 import { mockToken } from '@/test/mocks/handlers';
 
 describe('budgetsApi', () => {
   beforeEach(() => {
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
+    setAccessToken(mockToken);
   });
 
   describe('getAll', () => {
@@ -24,7 +24,7 @@ describe('budgetsApi', () => {
     });
 
     it('should throw ApiException on 401', async () => {
-      vi.mocked(localStorage.getItem).mockReturnValue(null);
+      setAccessToken(null);
 
       await expect(budgetsApi.getAll()).rejects.toThrow(ApiException);
     });
@@ -78,7 +78,7 @@ describe('budgetsApi', () => {
     });
 
     it('should throw ApiException on 401', async () => {
-      vi.mocked(localStorage.getItem).mockReturnValue(null);
+      setAccessToken(null);
 
       await expect(budgetsApi.getDetails('budget-1')).rejects.toThrow(
         ApiException,
@@ -107,7 +107,7 @@ describe('budgetsApi', () => {
     });
 
     it('should throw ApiException on 401', async () => {
-      vi.mocked(localStorage.getItem).mockReturnValue(null);
+      setAccessToken(null);
 
       await expect(budgetsApi.getByCategory('cat-2')).rejects.toThrow(
         ApiException,

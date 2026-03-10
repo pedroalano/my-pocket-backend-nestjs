@@ -12,9 +12,23 @@ export class ApiException extends Error {
   }
 }
 
+// Module-level access token — set by AuthContext, read by apiRequest
+let _accessToken: string | null = null;
+
+export function setAccessToken(token: string | null): void {
+  _accessToken = token;
+}
+
 function getToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('token');
+  return _accessToken;
+}
+
+function getRefreshTokenFromCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie
+    .split('; ')
+    .find((r) => r.startsWith('refresh_token='));
+  return match ? decodeURIComponent(match.split('=')[1]) : null;
 }
 
 function getLocale(): string {
@@ -25,9 +39,45 @@ function getLocale(): string {
   return match ? match.split('=')[1] : 'en';
 }
 
+// Auth endpoints that should NOT trigger the 401 refresh interceptor
+const SKIP_REFRESH_ENDPOINTS = [
+  '/auths/refresh',
+  '/auths/login',
+  '/auths/register',
+];
+
+async function tryRefreshToken(): Promise<string | null> {
+  const refreshToken = getRefreshTokenFromCookie();
+  if (!refreshToken) return null;
+
+  try {
+    const response = await fetch(`${API_URL}/auths/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) {
+      // Revoke the stale refresh token cookie
+      document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Strict';
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.refresh_token) {
+      const maxAge = 60 * 60 * 24 * 7;
+      document.cookie = `refresh_token=${data.refresh_token}; path=/; max-age=${maxAge}; SameSite=Strict`;
+    }
+    return data.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {},
+  _isRetry = false,
 ): Promise<T> {
   const token = getToken();
   const headers: HeadersInit = {
@@ -44,6 +94,24 @@ export async function apiRequest<T>(
     ...options,
     headers,
   });
+
+  if (
+    response.status === 401 &&
+    !_isRetry &&
+    !SKIP_REFRESH_ENDPOINTS.includes(endpoint)
+  ) {
+    const newToken = await tryRefreshToken();
+    if (newToken) {
+      setAccessToken(newToken);
+      return apiRequest<T>(endpoint, options, true);
+    }
+    // Refresh failed — clear state and redirect to login
+    setAccessToken(null);
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+    throw new ApiException(401, 'Session expired. Please log in again.');
+  }
 
   if (!response.ok) {
     const error: ApiError = await response.json().catch(() => ({

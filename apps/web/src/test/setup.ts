@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeAll, afterAll, vi, beforeEach } from 'vitest';
 import { server } from './mocks/server';
+import { setAccessToken } from '@/lib/api';
 
 // Suppress React act() warnings from Radix UI components
 // These warnings occur due to Radix UI's internal async state management
@@ -99,6 +100,10 @@ afterEach(() => {
   localStorageMock.getItem.mockReset();
   localStorageMock.setItem.mockReset();
   localStorageMock.removeItem.mockReset();
+  // Clear the module-level access token between tests
+  setAccessToken(null);
+  // Clear the refresh token cookie between tests
+  document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Strict';
 });
 
 afterAll(() => server.close());

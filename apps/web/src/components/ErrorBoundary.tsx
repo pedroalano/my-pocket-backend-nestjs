@@ -7,7 +7,6 @@ import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import {
   Card,
-  CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
@@ -61,15 +60,6 @@ class ErrorBoundaryInner extends Component<
               <CardTitle className="text-2xl font-bold">{title}</CardTitle>
               <CardDescription>{description}</CardDescription>
             </CardHeader>
-            {this.state.error && (
-              <CardContent>
-                <div className="rounded-md bg-muted p-3">
-                  <p className="text-sm text-muted-foreground font-mono break-all">
-                    {this.state.error.message}
-                  </p>
-                </div>
-              </CardContent>
-            )}
             <CardFooter className="flex flex-col space-y-2">
               <Button onClick={this.handleRetry} className="w-full">
                 {tryAgain}

@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
-import { mockBudgets, mockToken } from '@/test/mocks/handlers';
-import { renderWithProviders } from '@/test/test-utils';
+import { mockBudgets } from '@/test/mocks/handlers';
+import { renderWithAuthenticatedProviders } from '@/test/test-utils';
 import EditBudgetPage from './page';
 
 const API_URL = 'http://localhost:3001';
@@ -33,17 +33,16 @@ describe('EditBudgetPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set up authenticated state
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
   });
 
   it('shows loading state initially', async () => {
-    renderWithProviders(<EditBudgetPage />);
+    renderWithAuthenticatedProviders(<EditBudgetPage />);
 
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('renders Edit Budget page with form pre-filled', async () => {
-    renderWithProviders(<EditBudgetPage />);
+    renderWithAuthenticatedProviders(<EditBudgetPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Edit Budget')).toBeInTheDocument();
@@ -60,7 +59,7 @@ describe('EditBudgetPage', () => {
   });
 
   it('renders within AuthLayout', async () => {
-    renderWithProviders(<EditBudgetPage />);
+    renderWithAuthenticatedProviders(<EditBudgetPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Edit Budget')).toBeInTheDocument();
@@ -83,7 +82,7 @@ describe('EditBudgetPage', () => {
       }),
     );
 
-    renderWithProviders(<EditBudgetPage />);
+    renderWithAuthenticatedProviders(<EditBudgetPage />);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Budget not found');
@@ -102,7 +101,7 @@ describe('EditBudgetPage', () => {
       }),
     );
 
-    renderWithProviders(<EditBudgetPage />);
+    renderWithAuthenticatedProviders(<EditBudgetPage />);
 
     await waitFor(() => {
       expect(mockRouterPush).toHaveBeenCalledWith('/login');
@@ -121,7 +120,7 @@ describe('EditBudgetPage', () => {
       }),
     );
 
-    renderWithProviders(<EditBudgetPage />);
+    renderWithAuthenticatedProviders(<EditBudgetPage />);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Server error');

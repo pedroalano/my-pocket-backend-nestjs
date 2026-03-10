@@ -9,7 +9,7 @@ import {
   mockBudgetVsActual,
   mockTopExpenses,
 } from '@/test/mocks/handlers';
-import { renderWithProviders, setupUser } from '@/test/test-utils';
+import { renderWithAuthenticatedProviders, setupUser } from '@/test/test-utils';
 import DashboardPage from './page';
 
 const API_URL = 'http://localhost:3001';
@@ -56,16 +56,15 @@ vi.mock('next/navigation', async () => ({
 describe('DashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
   });
 
   it('renders loading skeletons initially', () => {
-    renderWithProviders(<DashboardPage />);
+    renderWithAuthenticatedProviders(<DashboardPage />);
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('renders monthly summary cards with correct values', async () => {
-    renderWithProviders(<DashboardPage />);
+    renderWithAuthenticatedProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Total Income')).toBeInTheDocument();
@@ -80,7 +79,7 @@ describe('DashboardPage', () => {
   });
 
   it('renders category breakdown section with category names', async () => {
-    renderWithProviders(<DashboardPage />);
+    renderWithAuthenticatedProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Category Breakdown')).toBeInTheDocument();
@@ -92,7 +91,7 @@ describe('DashboardPage', () => {
   });
 
   it('renders budget vs actual section with category names', async () => {
-    renderWithProviders(<DashboardPage />);
+    renderWithAuthenticatedProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Budget vs Actual')).toBeInTheDocument();
@@ -105,7 +104,7 @@ describe('DashboardPage', () => {
   });
 
   it('renders top expenses table with expense rows', async () => {
-    renderWithProviders(<DashboardPage />);
+    renderWithAuthenticatedProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Groceries')).toBeInTheDocument();
@@ -120,7 +119,7 @@ describe('DashboardPage', () => {
 
   it('clicking previous month decrements the month display', async () => {
     const user = setupUser();
-    renderWithProviders(<DashboardPage />);
+    renderWithAuthenticatedProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Total Income')).toBeInTheDocument();
@@ -141,7 +140,7 @@ describe('DashboardPage', () => {
 
   it('clicking next month increments the month display', async () => {
     const user = setupUser();
-    renderWithProviders(<DashboardPage />);
+    renderWithAuthenticatedProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Total Income')).toBeInTheDocument();
@@ -172,7 +171,7 @@ describe('DashboardPage', () => {
       ),
     );
 
-    renderWithProviders(<DashboardPage />);
+    renderWithAuthenticatedProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(screen.getByText('No expenses for this period.')).toBeInTheDocument();
@@ -193,7 +192,7 @@ describe('DashboardPage', () => {
       ),
     );
 
-    renderWithProviders(<DashboardPage />);
+    renderWithAuthenticatedProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Balance')).toBeInTheDocument();
@@ -213,7 +212,7 @@ describe('DashboardPage', () => {
       ),
     );
 
-    renderWithProviders(<DashboardPage />);
+    renderWithAuthenticatedProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(mockRouterPush).toHaveBeenCalledWith('/login');
@@ -230,7 +229,7 @@ describe('DashboardPage', () => {
       ),
     );
 
-    renderWithProviders(<DashboardPage />);
+    renderWithAuthenticatedProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(

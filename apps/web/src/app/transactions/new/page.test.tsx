@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { mockToken } from '@/test/mocks/handlers';
-import { renderWithProviders } from '@/test/test-utils';
+import { renderWithAuthenticatedProviders } from '@/test/test-utils';
 import NewTransactionPage from './page';
 
 // Mock next/navigation
@@ -26,11 +25,10 @@ describe('NewTransactionPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set up authenticated state
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
   });
 
   it('renders Create Transaction page with form', async () => {
-    renderWithProviders(<NewTransactionPage />);
+    renderWithAuthenticatedProviders(<NewTransactionPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Create Transaction')).toBeInTheDocument();
@@ -45,7 +43,7 @@ describe('NewTransactionPage', () => {
   });
 
   it('renders within AuthLayout', async () => {
-    renderWithProviders(<NewTransactionPage />);
+    renderWithAuthenticatedProviders(<NewTransactionPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Create Transaction')).toBeInTheDocument();

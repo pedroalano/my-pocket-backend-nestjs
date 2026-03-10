@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
-import { mockToken } from '@/test/mocks/handlers';
-import { renderWithProviders } from '@/test/test-utils';
+import { renderWithAuthenticatedProviders } from '@/test/test-utils';
 import NewBudgetPage from './page';
 
 // Mock next/navigation
@@ -26,11 +25,10 @@ describe('NewBudgetPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set up authenticated state
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
   });
 
   it('renders Create Budget page with form', async () => {
-    renderWithProviders(<NewBudgetPage />);
+    renderWithAuthenticatedProviders(<NewBudgetPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Create Budget')).toBeInTheDocument();
@@ -46,7 +44,7 @@ describe('NewBudgetPage', () => {
   });
 
   it('renders within AuthLayout', async () => {
-    renderWithProviders(<NewBudgetPage />);
+    renderWithAuthenticatedProviders(<NewBudgetPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Create Budget')).toBeInTheDocument();

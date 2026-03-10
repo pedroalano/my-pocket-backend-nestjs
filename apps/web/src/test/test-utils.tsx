@@ -3,7 +3,9 @@ import { render, RenderOptions, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi, expect } from 'vitest';
 import { NextIntlClientProvider } from 'next-intl';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, AuthContext } from '@/contexts/AuthContext';
+import { setAccessToken } from '@/lib/api';
+import { mockToken, mockUser } from '@/test/mocks/handlers';
 import enMessages from '../../messages/en.json';
 
 interface WrapperProps {
@@ -18,11 +20,46 @@ function AllProviders({ children }: WrapperProps) {
   );
 }
 
+// Mock auth context value for authenticated tests — avoids async session restore
+const mockAuthContextValue = {
+  user: mockUser,
+  token: mockToken,
+  isAuthenticated: true,
+  isLoading: false,
+  login: vi.fn(),
+  register: vi.fn(),
+  logout: vi.fn(),
+};
+
+function AuthenticatedProviders({ children }: WrapperProps) {
+  return (
+    <NextIntlClientProvider locale="en" messages={enMessages}>
+      <AuthContext.Provider value={mockAuthContextValue}>
+        {children}
+      </AuthContext.Provider>
+    </NextIntlClientProvider>
+  );
+}
+
 export function renderWithProviders(
   ui: React.ReactElement,
   options?: Omit<RenderOptions, 'wrapper'>,
 ) {
   return render(ui, { wrapper: AllProviders, ...options });
+}
+
+/**
+ * Renders a component with a synchronously authenticated auth context.
+ * Use this for all authenticated pages/components (dashboard, categories, etc.)
+ * to avoid the async session restore delay.
+ * Also sets the module-level access token so API calls include the auth header.
+ */
+export function renderWithAuthenticatedProviders(
+  ui: React.ReactElement,
+  options?: Omit<RenderOptions, 'wrapper'>,
+) {
+  setAccessToken(mockToken);
+  return render(ui, { wrapper: AuthenticatedProviders, ...options });
 }
 
 /**

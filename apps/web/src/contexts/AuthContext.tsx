@@ -8,7 +8,7 @@ import {
   useCallback,
   ReactNode,
 } from 'react';
-import { api, ApiException } from '@/lib/api';
+import { api, ApiException, setAccessToken } from '@/lib/api';
 import { AuthResponse, LoginRequest, RegisterRequest, User } from '@/types';
 
 interface AuthContextType {
@@ -21,7 +21,7 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function decodeToken(token: string): User | null {
   try {
@@ -37,23 +37,67 @@ function decodeToken(token: string): User | null {
   }
 }
 
+function setRefreshTokenCookie(token: string): void {
+  const maxAge = 60 * 60 * 24 * 7; // 7 days — matches backend refresh token expiry
+  const secure =
+    typeof location !== 'undefined' && location.protocol === 'https:'
+      ? '; Secure'
+      : '';
+  document.cookie = `refresh_token=${token}; path=/; max-age=${maxAge}; SameSite=Strict${secure}`;
+}
+
+function getRefreshTokenCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie
+    .split('; ')
+    .find((r) => r.startsWith('refresh_token='));
+  return match ? decodeURIComponent(match.split('=')[1]) : null;
+}
+
+function clearRefreshTokenCookie(): void {
+  document.cookie = 'refresh_token=; path=/; max-age=0; SameSite=Strict';
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  function applySession(accessToken: string): void {
+    const decodedUser = decodeToken(accessToken);
+    setAccessToken(accessToken);
+    setToken(accessToken);
+    setUser(decodedUser);
+  }
+
+  function clearSession(): void {
+    setAccessToken(null);
+    setToken(null);
+    setUser(null);
+  }
+
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken) {
-      const decodedUser = decodeToken(storedToken);
-      if (decodedUser) {
-        setToken(storedToken);
-        setUser(decodedUser);
-      } else {
-        localStorage.removeItem('token');
-      }
+    const refreshToken = getRefreshTokenCookie();
+    if (!refreshToken) {
+      setIsLoading(false);
+      return;
     }
-    setIsLoading(false);
+    api
+      .post<AuthResponse>('/auths/refresh', { refresh_token: refreshToken })
+      .then((response) => {
+        if (response.refresh_token) {
+          setRefreshTokenCookie(response.refresh_token);
+        }
+        applySession(response.access_token);
+      })
+      .catch(() => {
+        clearRefreshTokenCookie();
+        clearSession();
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = useCallback(async (data: LoginRequest) => {
@@ -62,7 +106,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!decodedUser) {
       throw new ApiException(401, 'Invalid token received');
     }
-    localStorage.setItem('token', response.access_token);
+    if (response.refresh_token) {
+      setRefreshTokenCookie(response.refresh_token);
+    }
+    setAccessToken(response.access_token);
     setToken(response.access_token);
     setUser(decodedUser);
   }, []);
@@ -73,15 +120,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!decodedUser) {
       throw new ApiException(401, 'Invalid token received');
     }
-    localStorage.setItem('token', response.access_token);
+    if (response.refresh_token) {
+      setRefreshTokenCookie(response.refresh_token);
+    }
+    setAccessToken(response.access_token);
     setToken(response.access_token);
     setUser(decodedUser);
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+    api.post('/auths/logout').catch(() => {}); // best-effort server-side revocation
+    clearRefreshTokenCookie();
+    clearSession();
   }, []);
 
   return (

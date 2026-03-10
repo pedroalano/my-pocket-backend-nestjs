@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
-import { mockTransactions, mockToken } from '@/test/mocks/handlers';
+import { mockTransactions } from '@/test/mocks/handlers';
 import {
-  renderWithProviders,
+  renderWithAuthenticatedProviders,
   setupUser,
   selectOption,
 } from '@/test/test-utils';
@@ -34,17 +34,16 @@ describe('TransactionsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set up authenticated state
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
   });
 
   it('renders loading skeleton initially', () => {
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
     // The skeleton should be visible while loading
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('renders transaction list from API', async () => {
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       // Transaction amounts should be displayed
@@ -57,7 +56,7 @@ describe('TransactionsPage', () => {
   });
 
   it('displays category names for transactions', async () => {
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       // Category names should be resolved from categoryId
@@ -68,7 +67,7 @@ describe('TransactionsPage', () => {
   });
 
   it('displays transaction descriptions', async () => {
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Grocery shopping')).toBeInTheDocument();
@@ -84,7 +83,7 @@ describe('TransactionsPage', () => {
       }),
     );
 
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(
@@ -97,7 +96,7 @@ describe('TransactionsPage', () => {
 
   it('shows "no matches" message when filters yield no results', async () => {
     const user = setupUser();
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -119,7 +118,7 @@ describe('TransactionsPage', () => {
 
   it('filters transactions by type', async () => {
     const user = setupUser();
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -135,7 +134,7 @@ describe('TransactionsPage', () => {
 
   it('filters transactions by category', async () => {
     const user = setupUser();
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -172,7 +171,7 @@ describe('TransactionsPage', () => {
       }),
     );
 
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -194,7 +193,7 @@ describe('TransactionsPage', () => {
   });
 
   it('has New Transaction button that links to create page', async () => {
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -205,7 +204,7 @@ describe('TransactionsPage', () => {
   });
 
   it('has Edit buttons that link to edit pages', async () => {
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -225,7 +224,7 @@ describe('TransactionsPage', () => {
 
   it('opens delete confirmation dialog when Delete is clicked', async () => {
     const user = setupUser();
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -243,7 +242,7 @@ describe('TransactionsPage', () => {
 
   it('closes delete dialog when Cancel is clicked', async () => {
     const user = setupUser();
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -266,7 +265,7 @@ describe('TransactionsPage', () => {
   it('deletes transaction when confirmed and removes from list', async () => {
     const user = setupUser();
     const { toast } = await import('sonner');
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -303,7 +302,7 @@ describe('TransactionsPage', () => {
       }),
     );
 
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(mockRouterPush).toHaveBeenCalledWith('/login');
@@ -321,7 +320,7 @@ describe('TransactionsPage', () => {
       }),
     );
 
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Server error');
@@ -336,7 +335,7 @@ describe('TransactionsPage', () => {
       }),
     );
 
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Failed to load transactions');
@@ -359,7 +358,7 @@ describe('TransactionsPage', () => {
       }),
     );
 
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -412,7 +411,7 @@ describe('TransactionsPage', () => {
       }),
     );
 
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -438,7 +437,7 @@ describe('TransactionsPage', () => {
   });
 
   it('displays date in formatted format', async () => {
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();
@@ -451,7 +450,7 @@ describe('TransactionsPage', () => {
 
   it('clears filters when clear button is clicked', async () => {
     const user = setupUser();
-    renderWithProviders(<TransactionsPage />);
+    renderWithAuthenticatedProviders(<TransactionsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$150.00')).toBeInTheDocument();

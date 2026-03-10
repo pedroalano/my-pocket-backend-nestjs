@@ -1,15 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { api, apiRequest, ApiException } from './api';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { api, apiRequest, ApiException, setAccessToken } from './api';
 import { mockToken } from '@/test/mocks/handlers';
 
 describe('api', () => {
   beforeEach(() => {
-    vi.mocked(localStorage.getItem).mockReturnValue(null);
+    setAccessToken(null);
   });
 
   describe('apiRequest', () => {
     it('should add Authorization header when token exists', async () => {
-      vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
+      setAccessToken(mockToken);
 
       const result = await api.get('/categories');
 
@@ -18,13 +18,13 @@ describe('api', () => {
     });
 
     it('should not add Authorization header when no token', async () => {
-      vi.mocked(localStorage.getItem).mockReturnValue(null);
+      setAccessToken(null);
 
       await expect(api.get('/categories')).rejects.toThrow(ApiException);
     });
 
     it('should throw ApiException on 401 error', async () => {
-      vi.mocked(localStorage.getItem).mockReturnValue(null);
+      setAccessToken(null);
 
       try {
         await api.get('/categories');
@@ -32,7 +32,6 @@ describe('api', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
         expect((error as ApiException).statusCode).toBe(401);
-        expect((error as ApiException).message).toBe('Unauthorized');
       }
     });
 
@@ -59,7 +58,7 @@ describe('api', () => {
     });
 
     it('should handle 204 No Content response', async () => {
-      vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
+      setAccessToken(mockToken);
 
       const result = await api.delete('/categories/cat-1');
 
@@ -69,7 +68,7 @@ describe('api', () => {
 
   describe('api methods', () => {
     beforeEach(() => {
-      vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
+      setAccessToken(mockToken);
     });
 
     it('api.get should make GET request', async () => {

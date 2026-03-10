@@ -167,12 +167,17 @@ export const mockTopExpenses = [
 export const mockToken =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0LXVzZXItaWQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJuYW1lIjoiVGVzdCBVc2VyIiwiaWF0IjoxNzA0MDY3MjAwfQ.fake-signature';
 
+export const mockRefreshToken = 'mock-refresh-token-value';
+
 export const handlers = [
   // Auth endpoints
   http.post(`${API_URL}/auths/login`, async ({ request }) => {
     const body = (await request.json()) as { email: string; password: string };
     if (body.email === 'test@example.com' && body.password === 'password123') {
-      return HttpResponse.json({ access_token: mockToken });
+      return HttpResponse.json({
+        access_token: mockToken,
+        refresh_token: mockRefreshToken,
+      });
     }
     return HttpResponse.json(
       { message: 'Invalid credentials', statusCode: 401 },
@@ -188,7 +193,28 @@ export const handlers = [
         { status: 409 },
       );
     }
-    return HttpResponse.json({ access_token: mockToken });
+    return HttpResponse.json({
+      access_token: mockToken,
+      refresh_token: mockRefreshToken,
+    });
+  }),
+
+  http.post(`${API_URL}/auths/refresh`, async ({ request }) => {
+    const body = (await request.json()) as { refresh_token: string };
+    if (body.refresh_token === mockRefreshToken) {
+      return HttpResponse.json({
+        access_token: mockToken,
+        refresh_token: mockRefreshToken,
+      });
+    }
+    return HttpResponse.json(
+      { message: 'Invalid refresh token', statusCode: 401 },
+      { status: 401 },
+    );
+  }),
+
+  http.post(`${API_URL}/auths/logout`, () => {
+    return new HttpResponse(null, { status: 204 });
   }),
 
   // Categories endpoints

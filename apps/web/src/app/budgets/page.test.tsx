@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
-import { mockBudgets, mockToken } from '@/test/mocks/handlers';
+import { mockBudgets } from '@/test/mocks/handlers';
 import {
-  renderWithProviders,
+  renderWithAuthenticatedProviders,
   setupUser,
   selectOption,
 } from '@/test/test-utils';
@@ -31,17 +31,16 @@ describe('BudgetsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set up authenticated state
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
   });
 
   it('renders loading skeleton initially', () => {
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
     // The skeleton should be visible while loading
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('renders budget list from API', async () => {
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       // Budget amounts should be displayed
@@ -54,7 +53,7 @@ describe('BudgetsPage', () => {
   });
 
   it('displays category names for budgets', async () => {
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       // Category names should be resolved from categoryId
@@ -71,7 +70,7 @@ describe('BudgetsPage', () => {
       }),
     );
 
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(
@@ -84,7 +83,7 @@ describe('BudgetsPage', () => {
 
   it('shows "no matches" message when filters yield no results', async () => {
     const user = setupUser();
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();
@@ -100,7 +99,7 @@ describe('BudgetsPage', () => {
 
   it('filters budgets by type', async () => {
     const user = setupUser();
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();
@@ -135,7 +134,7 @@ describe('BudgetsPage', () => {
       }),
     );
 
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();
@@ -171,7 +170,7 @@ describe('BudgetsPage', () => {
       }),
     );
 
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();
@@ -187,7 +186,7 @@ describe('BudgetsPage', () => {
   });
 
   it('has New Budget button that links to create page', async () => {
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();
@@ -198,7 +197,7 @@ describe('BudgetsPage', () => {
   });
 
   it('has Edit buttons that link to edit pages', async () => {
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();
@@ -212,7 +211,7 @@ describe('BudgetsPage', () => {
 
   it('opens delete confirmation dialog when Delete is clicked', async () => {
     const user = setupUser();
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();
@@ -230,7 +229,7 @@ describe('BudgetsPage', () => {
 
   it('closes delete dialog when Cancel is clicked', async () => {
     const user = setupUser();
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();
@@ -253,7 +252,7 @@ describe('BudgetsPage', () => {
   it('deletes budget when confirmed and removes from list', async () => {
     const user = setupUser();
     const { toast } = await import('sonner');
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();
@@ -288,7 +287,7 @@ describe('BudgetsPage', () => {
       }),
     );
 
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(mockRouterPush).toHaveBeenCalledWith('/login');
@@ -306,7 +305,7 @@ describe('BudgetsPage', () => {
       }),
     );
 
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Server error');
@@ -321,7 +320,7 @@ describe('BudgetsPage', () => {
       }),
     );
 
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Failed to load budgets');
@@ -344,7 +343,7 @@ describe('BudgetsPage', () => {
       }),
     );
 
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();
@@ -393,7 +392,7 @@ describe('BudgetsPage', () => {
       }),
     );
 
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();
@@ -413,7 +412,7 @@ describe('BudgetsPage', () => {
   });
 
   it('displays period as Month/Year format', async () => {
-    renderWithProviders(<BudgetsPage />);
+    renderWithAuthenticatedProviders(<BudgetsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('$500.00')).toBeInTheDocument();

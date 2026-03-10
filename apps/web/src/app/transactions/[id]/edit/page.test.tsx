@@ -2,8 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
-import { mockToken } from '@/test/mocks/handlers';
-import { renderWithProviders } from '@/test/test-utils';
+import { renderWithAuthenticatedProviders } from '@/test/test-utils';
 import EditTransactionPage from './page';
 
 const API_URL = 'http://localhost:3001';
@@ -33,17 +32,16 @@ describe('EditTransactionPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set up authenticated state
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
   });
 
   it('shows loading state initially', async () => {
-    renderWithProviders(<EditTransactionPage />);
+    renderWithAuthenticatedProviders(<EditTransactionPage />);
 
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
 
   it('renders Edit Transaction page with form pre-filled', async () => {
-    renderWithProviders(<EditTransactionPage />);
+    renderWithAuthenticatedProviders(<EditTransactionPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Edit Transaction')).toBeInTheDocument();
@@ -60,7 +58,7 @@ describe('EditTransactionPage', () => {
   });
 
   it('renders within AuthLayout', async () => {
-    renderWithProviders(<EditTransactionPage />);
+    renderWithAuthenticatedProviders(<EditTransactionPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Edit Transaction')).toBeInTheDocument();
@@ -83,7 +81,7 @@ describe('EditTransactionPage', () => {
       }),
     );
 
-    renderWithProviders(<EditTransactionPage />);
+    renderWithAuthenticatedProviders(<EditTransactionPage />);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Failed to load transaction');
@@ -102,7 +100,7 @@ describe('EditTransactionPage', () => {
       }),
     );
 
-    renderWithProviders(<EditTransactionPage />);
+    renderWithAuthenticatedProviders(<EditTransactionPage />);
 
     await waitFor(() => {
       expect(mockRouterPush).toHaveBeenCalledWith('/login');
@@ -121,7 +119,7 @@ describe('EditTransactionPage', () => {
       }),
     );
 
-    renderWithProviders(<EditTransactionPage />);
+    renderWithAuthenticatedProviders(<EditTransactionPage />);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Server error');

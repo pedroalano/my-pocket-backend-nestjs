@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { transactionsApi } from './transactions';
 import { TransactionType } from '@/types';
-import { ApiException } from './api';
+import { ApiException, setAccessToken } from './api';
 import { mockToken } from '@/test/mocks/handlers';
 
 describe('transactionsApi', () => {
   beforeEach(() => {
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
+    setAccessToken(mockToken);
   });
 
   describe('getAll', () => {
@@ -23,7 +23,7 @@ describe('transactionsApi', () => {
     });
 
     it('should throw ApiException on 401', async () => {
-      vi.mocked(localStorage.getItem).mockReturnValue(null);
+      setAccessToken(null);
 
       await expect(transactionsApi.getAll()).rejects.toThrow(ApiException);
     });

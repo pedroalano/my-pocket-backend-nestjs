@@ -2,9 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
-import { mockCategories, mockToken } from '@/test/mocks/handlers';
+import { mockCategories } from '@/test/mocks/handlers';
 import {
-  renderWithProviders,
+  renderWithAuthenticatedProviders,
   setupUser,
   selectOption,
 } from '@/test/test-utils';
@@ -34,17 +34,16 @@ describe('CategoriesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Set up authenticated state
-    vi.mocked(localStorage.getItem).mockReturnValue(mockToken);
   });
 
   it('renders loading skeleton initially', () => {
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
     // The skeleton should be visible while loading
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('renders category list from API', async () => {
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();
@@ -62,7 +61,7 @@ describe('CategoriesPage', () => {
       }),
     );
 
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(
@@ -75,7 +74,7 @@ describe('CategoriesPage', () => {
 
   it('shows "no matches" message when search yields no results', async () => {
     const user = setupUser();
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();
@@ -91,7 +90,7 @@ describe('CategoriesPage', () => {
 
   it('filters categories by search query', async () => {
     const user = setupUser();
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();
@@ -106,7 +105,7 @@ describe('CategoriesPage', () => {
 
   it('filters categories by type with dropdown', async () => {
     const user = setupUser();
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();
@@ -121,7 +120,7 @@ describe('CategoriesPage', () => {
 
   it('filters to show only expense categories', async () => {
     const user = setupUser();
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Groceries')).toBeInTheDocument();
@@ -135,7 +134,7 @@ describe('CategoriesPage', () => {
   });
 
   it('has New Category button that links to create page', async () => {
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();
@@ -146,7 +145,7 @@ describe('CategoriesPage', () => {
   });
 
   it('has Edit buttons that link to edit pages', async () => {
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();
@@ -160,7 +159,7 @@ describe('CategoriesPage', () => {
 
   it('opens delete confirmation dialog when Delete is clicked', async () => {
     const user = setupUser();
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();
@@ -178,7 +177,7 @@ describe('CategoriesPage', () => {
 
   it('closes delete dialog when Cancel is clicked', async () => {
     const user = setupUser();
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();
@@ -201,7 +200,7 @@ describe('CategoriesPage', () => {
   it('deletes category when confirmed and removes from list', async () => {
     const user = setupUser();
     const { toast } = await import('sonner');
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();
@@ -238,7 +237,7 @@ describe('CategoriesPage', () => {
       }),
     );
 
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(mockRouterPush).toHaveBeenCalledWith('/login');
@@ -256,7 +255,7 @@ describe('CategoriesPage', () => {
       }),
     );
 
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Server error');
@@ -271,7 +270,7 @@ describe('CategoriesPage', () => {
       }),
     );
 
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Failed to load categories');
@@ -294,7 +293,7 @@ describe('CategoriesPage', () => {
       }),
     );
 
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();
@@ -334,7 +333,7 @@ describe('CategoriesPage', () => {
       }),
     );
 
-    renderWithProviders(<CategoriesPage />);
+    renderWithAuthenticatedProviders(<CategoriesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Salary')).toBeInTheDocument();

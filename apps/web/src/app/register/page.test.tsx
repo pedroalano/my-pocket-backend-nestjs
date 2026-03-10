@@ -28,7 +28,6 @@ vi.mock('sonner', () => ({
 describe('RegisterPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(localStorage.getItem).mockReturnValue(null);
   });
 
   it('renders name, email, and password inputs', () => {
@@ -206,7 +205,7 @@ describe('RegisterPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('stores token in localStorage on successful registration', async () => {
+  it('stores refresh token in cookie on successful registration', async () => {
     const user = userEvent.setup();
 
     renderWithProviders(<RegisterPage />);
@@ -217,7 +216,7 @@ describe('RegisterPage', () => {
     await user.click(screen.getByRole('button', { name: 'Create an account' }));
 
     await waitFor(() => {
-      expect(localStorage.setItem).toHaveBeenCalled();
+      expect(document.cookie).toContain('refresh_token=');
     });
   });
 
