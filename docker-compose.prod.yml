@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: my-pocket-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: bd_my_pocket
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - my-pocket-network
+
+  api:
+    image: ${API_IMAGE}
+    container_name: my-pocket-api
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/bd_my_pocket
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: 3600
+      JWT_REFRESH_EXPIRATION: 604800
+      PORT: 3001
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./scripts/docker-entrypoint.sh:/app/docker-entrypoint.sh
+    entrypoint: /bin/sh /app/docker-entrypoint.sh
+    networks:
+      - my-pocket-network
+    restart: unless-stopped
+
+  web:
+    image: ${WEB_IMAGE}
+    container_name: my-pocket-web
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://api:3001}
+    ports:
+      - '3000:3000'
+    depends_on:
+      - api
+    networks:
+      - my-pocket-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  my-pocket-network:
+    driver: bridge
