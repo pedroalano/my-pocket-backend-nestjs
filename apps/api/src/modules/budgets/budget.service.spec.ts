@@ -4,7 +4,12 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { BudgetType, CategoryType, Prisma, TransactionType } from '@prisma/client';
+import {
+  BudgetType,
+  CategoryType,
+  Prisma,
+  TransactionType,
+} from '@prisma/client';
 import { I18nService } from 'nestjs-i18n';
 import { BudgetService } from './budget.service';
 import { CategoriesService } from '../categories/categories.service';
@@ -1066,7 +1071,9 @@ describe('BudgetService', () => {
       );
 
       expect(result?.transactions).toEqual([]);
-      expect((result as { spent: string } | null | undefined)?.spent).toBe('0.00');
+      expect((result as { spent: string } | null | undefined)?.spent).toBe(
+        '0.00',
+      );
       expect(result?.utilizationPercentage).toBe(0);
     });
 
