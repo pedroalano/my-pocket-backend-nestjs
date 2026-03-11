@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CategoriesService } from './categories.service';
 import { PrismaService } from '../shared/prisma.service';
 import { NotFoundException } from '@nestjs/common';
+import { CategoryType } from '@prisma/client';
 import { I18nService } from 'nestjs-i18n';
 
 describe('CategoriesService', () => {
@@ -26,7 +27,7 @@ describe('CategoriesService', () => {
   const mockCategory = {
     id: categoryId,
     name: 'PayCheck',
-    type: 'INCOME',
+    type: CategoryType.INCOME,
     userId,
     createdAt: new Date('2026-02-13T00:00:00.000Z'),
     updatedAt: new Date('2026-02-13T00:00:00.000Z'),
@@ -93,7 +94,7 @@ describe('CategoriesService', () => {
         ...mockCategory,
         id: 'other-id',
         name: 'Zeta',
-        type: 'EXPENSE',
+        type: CategoryType.EXPENSE,
       },
     ];
 

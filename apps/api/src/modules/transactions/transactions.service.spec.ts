@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { TransactionType } from '@prisma/client';
+import { CategoryType, TransactionType } from '@prisma/client';
 import { I18nService } from 'nestjs-i18n';
 import { TransactionsService } from './transactions.service';
 import { CategoriesService } from '../categories/categories.service';
@@ -95,7 +95,8 @@ const createPrismaMock = () => {
 const buildCategory = (id: string, name: string) => ({
   id,
   name,
-  type: 'income',
+  type: CategoryType.INCOME,
+  userId: 'user-123',
   createdAt: new Date('2025-01-01T00:00:00.000Z'),
   updatedAt: new Date('2025-01-01T00:00:00.000Z'),
 });

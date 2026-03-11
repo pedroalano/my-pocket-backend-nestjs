@@ -4,7 +4,7 @@ import {
   ConflictException,
   NotFoundException,
 } from '@nestjs/common';
-import { BudgetType, Prisma, TransactionType } from '@prisma/client';
+import { BudgetType, CategoryType, Prisma, TransactionType } from '@prisma/client';
 import { I18nService } from 'nestjs-i18n';
 import { BudgetService } from './budget.service';
 import { CategoriesService } from '../categories/categories.service';
@@ -40,7 +40,7 @@ const stripUndefined = <T extends Record<string, any>>(value: T) =>
 const buildCategory = (id: string, name: string, userId: string) => ({
   id,
   name,
-  type: 'expense',
+  type: CategoryType.EXPENSE,
   userId,
   createdAt: new Date('2025-01-01T00:00:00.000Z'),
   updatedAt: new Date('2025-01-01T00:00:00.000Z'),
@@ -537,9 +537,7 @@ describe('BudgetService', () => {
       ).rejects.toThrow(ConflictException);
       await expect(
         service.updateBudget(secondBudget.id, updateDto, userId),
-      ).rejects.toThrow(
-        'budgets.errors.alreadyExists',
-      );
+      ).rejects.toThrow('budgets.errors.alreadyExists');
     });
   });
 
@@ -563,7 +561,6 @@ describe('BudgetService', () => {
           date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
           userId,
-          userId,
         },
         {
           id: 't2',
@@ -572,7 +569,6 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-20T00:00:00.000Z'),
           description: 'Transaction 2',
-          userId,
           userId,
         },
         {
@@ -658,7 +654,6 @@ describe('BudgetService', () => {
           date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
           userId,
-          userId,
         },
       ]);
     });
@@ -679,7 +674,6 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Transaction 1',
-          userId,
           userId,
         },
       ]);
@@ -730,7 +724,7 @@ describe('BudgetService', () => {
       }
 
       expect(result.utilizationPercentage).toBe(50);
-      expect(result.spent).toBe('250.00');
+      expect((result as { spent: string }).spent).toBe('250.00');
       expect(result.remaining).toBe('250.00');
     });
 
@@ -937,7 +931,7 @@ describe('BudgetService', () => {
         category: {
           id: categoryId,
           name: 'Groceries',
-          type: 'expense',
+          type: CategoryType.EXPENSE,
           userId,
           createdAt: new Date('2025-01-01T00:00:00.000Z'),
           updatedAt: new Date('2025-01-01T00:00:00.000Z'),
@@ -961,7 +955,7 @@ describe('BudgetService', () => {
       const [budget] = await service.getAllBudgets(userId);
       const result = await service.getBudgetWithCategory(budget.id, userId);
 
-      expect(result.category).toBeNull();
+      expect(result!.category).toBeNull();
     });
   });
 
@@ -1015,7 +1009,7 @@ describe('BudgetService', () => {
         category: {
           id: categoryId,
           name: 'Groceries',
-          type: 'expense',
+          type: CategoryType.EXPENSE,
           userId,
           createdAt: new Date('2025-01-01T00:00:00.000Z'),
           updatedAt: new Date('2025-01-01T00:00:00.000Z'),
@@ -1061,6 +1055,7 @@ describe('BudgetService', () => {
           type: TransactionType.EXPENSE,
           date: new Date('2026-01-15T00:00:00.000Z'),
           description: 'Different category',
+          userId,
         },
       ]);
 
@@ -1071,7 +1066,7 @@ describe('BudgetService', () => {
       );
 
       expect(result?.transactions).toEqual([]);
-      expect(result?.spent).toBe('0.00');
+      expect((result as { spent: string } | null | undefined)?.spent).toBe('0.00');
       expect(result?.utilizationPercentage).toBe(0);
     });
 
