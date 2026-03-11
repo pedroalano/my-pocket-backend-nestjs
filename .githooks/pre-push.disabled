@@ -1,0 +1,24 @@
+#!/bin/sh
+# Pre-push hook — mirrors the CI pipeline locally.
+#
+# Activate:   mv .githooks/pre-push.disabled .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+# Deactivate: mv .git/hooks/pre-push .githooks/pre-push.disabled
+
+set -e
+
+echo "▶ [pre-push] Lint..."
+npm run lint
+
+echo "▶ [pre-push] Type check (web)..."
+cd apps/web && npx tsc --noEmit && cd ../..
+
+echo "▶ [pre-push] Type check (api)..."
+cd apps/api && npx tsc --noEmit && cd ../..
+
+echo "▶ [pre-push] API unit tests..."
+cd apps/api && npm test && cd ../..
+
+echo "▶ [pre-push] Web tests..."
+cd apps/web && npm run test:run && cd ../..
+
+echo "✓ All checks passed."

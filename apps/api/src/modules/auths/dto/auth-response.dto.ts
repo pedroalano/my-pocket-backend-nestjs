@@ -9,7 +9,8 @@ export class AuthResponseDto {
   access_token: string;
 
   @ApiProperty({
-    description: 'Long-lived refresh token (7 days), used to obtain new access tokens',
+    description:
+      'Long-lived refresh token (7 days), used to obtain new access tokens',
     example:
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refreshTokenPayload.signature',
   })

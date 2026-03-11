@@ -67,7 +67,10 @@ export class CategoriesService {
       ) {
         throw new ConflictException(
           this.i18n.t('categories.errors.alreadyExists', {
-            args: { name: createCategoryDto.name, type: createCategoryDto.type },
+            args: {
+              name: createCategoryDto.name,
+              type: createCategoryDto.type,
+            },
             lang: this.lang,
           }),
         );
@@ -106,7 +109,10 @@ export class CategoriesService {
       ) {
         throw new ConflictException(
           this.i18n.t('categories.errors.alreadyExists', {
-            args: { name: updateCategoryDto.name, type: updateCategoryDto.type },
+            args: {
+              name: updateCategoryDto.name,
+              type: updateCategoryDto.type,
+            },
             lang: this.lang,
           }),
         );

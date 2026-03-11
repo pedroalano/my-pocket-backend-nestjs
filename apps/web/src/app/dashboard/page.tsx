@@ -230,8 +230,8 @@ export default function DashboardPage() {
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
-                    label={({ name, percent }: { name: string; percent: number }) =>
-                      `${name} ${(percent * 100).toFixed(1)}%`
+                    label={({ name, percent }) =>
+                      `${name ?? ''} ${((percent ?? 0) * 100).toFixed(1)}%`
                     }
                   >
                     {categoryBreakdown.map((_, index) => (
@@ -250,7 +250,7 @@ export default function DashboardPage() {
                     }}
                   />
                   <Tooltip
-                    formatter={(value: number) => formatCurrency(value, locale)}
+                    formatter={(value) => formatCurrency(Number(value ?? 0), locale)}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip formatter={(value: number) => formatCurrency(value, locale)} />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value ?? 0), locale)} />
                   <Legend />
                   <Bar dataKey={t('budget')} fill="#3b82f6" />
                   <Bar dataKey={t('actual')} fill="#ef4444" />
