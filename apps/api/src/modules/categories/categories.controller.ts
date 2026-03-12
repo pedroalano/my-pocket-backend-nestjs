@@ -9,20 +9,19 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CategoriesService } from './categories.service';
+import {
+  ApiGetAllCategories,
+  ApiGetCategoryById,
+  ApiCreateCategory,
+  ApiCreateCategoryBatch,
+  ApiUpdateCategory,
+  ApiDeleteCategory,
+} from './categories.swagger';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { CreateCategoryBatchDto } from './dto/create-category-batch.dto';
-import { BatchResultDto } from './dto/batch-result.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { CategoryDto } from './dto/category.dto';
 import { JwtAuthGuard } from '../auths/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../auths/interfaces/authenticated-request.interface';
 
@@ -34,40 +33,13 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all categories' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of all categories for the authenticated user',
-    type: [CategoryDto],
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
+  @ApiGetAllCategories()
   getAllCategories(@Request() req: AuthenticatedRequest) {
     return this.categoriesService.getAllCategories(req.user.userId);
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a specific category by ID' })
-  @ApiParam({
-    name: 'id',
-    description: 'The ID of the category to retrieve',
-    type: 'string',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Category found and returned successfully',
-    type: CategoryDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Category not found',
-  })
+  @ApiGetCategoryById()
   getCategoryById(
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
@@ -76,20 +48,7 @@ export class CategoriesController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Create a new category' })
-  @ApiResponse({
-    status: 201,
-    description: 'Category created successfully',
-    type: CategoryDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request - Invalid input data',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
+  @ApiCreateCategory()
   createCategory(
     @Body() createCategoryDto: CreateCategoryDto,
     @Request() req: AuthenticatedRequest,
@@ -101,25 +60,7 @@ export class CategoriesController {
   }
 
   @Post('batch')
-  @ApiOperation({
-    summary: 'Create multiple categories at once, skipping duplicates',
-    description:
-      'Accepts up to 50 category items. Each item is created individually; P2002 (unique constraint) errors are silently skipped. Returns the count of created and skipped items.',
-  })
-  @ApiBody({ type: CreateCategoryBatchDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Batch result with created and skipped counts',
-    type: BatchResultDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request - Invalid input data',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
+  @ApiCreateCategoryBatch()
   createCategoryBatch(
     @Body() createCategoryBatchDto: CreateCategoryBatchDto,
     @Request() req: AuthenticatedRequest,
@@ -131,29 +72,7 @@ export class CategoriesController {
   }
 
   @Put(':id')
-  @ApiOperation({ summary: 'Update an existing category' })
-  @ApiParam({
-    name: 'id',
-    description: 'The ID of the category to update',
-    type: 'string',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Category updated successfully',
-    type: CategoryDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request - Invalid input data',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Category not found',
-  })
+  @ApiUpdateCategory()
   updateCategory(
     @Param('id') id: string,
     @Body() updateCategoryDto: UpdateCategoryDto,
@@ -167,24 +86,7 @@ export class CategoriesController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a category' })
-  @ApiParam({
-    name: 'id',
-    description: 'The ID of the category to delete',
-    type: 'string',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Category deleted successfully',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized - Invalid or missing JWT token',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Category not found',
-  })
+  @ApiDeleteCategory()
   deleteCategory(
     @Param('id') id: string,
     @Request() req: AuthenticatedRequest,
