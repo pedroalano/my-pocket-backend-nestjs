@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CategoriesService } from './categories.service';
 import { PrismaService } from '../shared/prisma.service';
 import { NotFoundException } from '@nestjs/common';
-import { CategoryType } from '@prisma/client';
+import { CategoryType, Prisma } from '@prisma/client';
 import { I18nService } from 'nestjs-i18n';
 
 describe('CategoriesService', () => {
@@ -242,6 +242,88 @@ describe('CategoriesService', () => {
     expect(prismaService.category.findUnique).toHaveBeenCalledWith({
       where: { id: categoryId },
       select: { id: true, userId: true },
+    });
+  });
+
+  describe('createCategoryBatch', () => {
+    it('should create all categories and return { created: n, skipped: 0 }', async () => {
+      const batchDto = {
+        categories: [
+          { name: 'Salary', type: 'INCOME' },
+          { name: 'Food', type: 'EXPENSE' },
+        ],
+      };
+
+      jest
+        .spyOn(prismaService.category, 'create')
+        .mockResolvedValue(mockCategory);
+
+      const result = await service.createCategoryBatch(batchDto, userId);
+
+      expect(result).toEqual({ created: 2, skipped: 0 });
+      expect(prismaService.category.create).toHaveBeenCalledTimes(2);
+    });
+
+    it('should skip P2002 duplicates and return correct counts', async () => {
+      const batchDto = {
+        categories: [
+          { name: 'Salary', type: 'INCOME' },
+          { name: 'Food', type: 'EXPENSE' },
+        ],
+      };
+
+      const p2002Error = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed',
+        { code: 'P2002', clientVersion: '5.0.0' },
+      );
+
+      jest
+        .spyOn(prismaService.category, 'create')
+        .mockResolvedValueOnce(mockCategory)
+        .mockRejectedValueOnce(p2002Error);
+
+      const result = await service.createCategoryBatch(batchDto, userId);
+
+      expect(result).toEqual({ created: 1, skipped: 1 });
+    });
+
+    it('should rethrow non-P2002 errors', async () => {
+      const batchDto = {
+        categories: [{ name: 'Salary', type: 'INCOME' }],
+      };
+
+      const unexpectedError = new Error('Database connection failed');
+
+      jest
+        .spyOn(prismaService.category, 'create')
+        .mockRejectedValue(unexpectedError);
+
+      await expect(
+        service.createCategoryBatch(batchDto, userId),
+      ).rejects.toThrow('Database connection failed');
+    });
+
+    it('should return { created: 0, skipped: n } when all are duplicates', async () => {
+      const batchDto = {
+        categories: [
+          { name: 'Salary', type: 'INCOME' },
+          { name: 'Food', type: 'EXPENSE' },
+          { name: 'Transport', type: 'EXPENSE' },
+        ],
+      };
+
+      const p2002Error = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed',
+        { code: 'P2002', clientVersion: '5.0.0' },
+      );
+
+      jest
+        .spyOn(prismaService.category, 'create')
+        .mockRejectedValue(p2002Error);
+
+      const result = await service.createCategoryBatch(batchDto, userId);
+
+      expect(result).toEqual({ created: 0, skipped: 3 });
     });
   });
 });

@@ -201,6 +201,29 @@
     "tryAgain": "Try Again",
     "goHome": "Go Home"
   },
+  "presetCategories": {
+    "stepTitle": "Set up your categories",
+    "stepSubtitle": "Select the categories you want to start with. You can always add more later.",
+    "incomeGroup": "Income",
+    "expenseGroup": "Expenses",
+    "getStarted": "Get Started",
+    "skip": "Skip",
+    "creating": "Creating...",
+    "successToast": "Categories created successfully!",
+    "names": {
+      "Salary": "Salary",
+      "Freelance": "Freelance",
+      "Investments": "Investments",
+      "Food": "Food",
+      "Transport": "Transport",
+      "Housing": "Housing",
+      "Entertainment": "Entertainment",
+      "Healthcare": "Healthcare",
+      "Utilities": "Utilities",
+      "Shopping": "Shopping",
+      "Education": "Education"
+    }
+  },
   "months": {
     "1": "January",
     "2": "February",

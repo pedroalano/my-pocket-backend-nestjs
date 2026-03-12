@@ -247,6 +247,23 @@ export const handlers = [
     return HttpResponse.json(category);
   }),
 
+  http.post(`${API_URL}/categories/batch`, async ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    const body = (await request.json()) as {
+      categories: { name: string; type: string }[];
+    };
+    return HttpResponse.json({
+      created: body.categories.length,
+      skipped: 0,
+    });
+  }),
+
   http.post(`${API_URL}/categories`, async ({ request }) => {
     const auth = request.headers.get('Authorization');
     if (!auth?.startsWith('Bearer ')) {

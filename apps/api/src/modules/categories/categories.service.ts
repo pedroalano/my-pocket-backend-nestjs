@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client';
 import { Category, CategoryType } from '@prisma/client';
 import { I18nService, I18nContext } from 'nestjs-i18n';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { CreateCategoryBatchDto } from './dto/create-category-batch.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { PrismaService } from '../shared/prisma.service';
 
@@ -119,6 +120,35 @@ export class CategoriesService {
       }
       throw error;
     }
+  }
+
+  async createCategoryBatch(dto: CreateCategoryBatchDto, userId: string) {
+    let created = 0;
+    let skipped = 0;
+
+    for (const item of dto.categories) {
+      try {
+        await this.prisma.category.create({
+          data: {
+            name: item.name,
+            type: item.type.toUpperCase() as CategoryType,
+            userId,
+          },
+        });
+        created++;
+      } catch (e) {
+        if (
+          e instanceof Prisma.PrismaClientKnownRequestError &&
+          e.code === 'P2002'
+        ) {
+          skipped++;
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    return { created, skipped };
   }
 
   async deleteCategory(id: string, userId: string) {

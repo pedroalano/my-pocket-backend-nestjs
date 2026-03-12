@@ -201,6 +201,29 @@
     "tryAgain": "Tentar Novamente",
     "goHome": "Ir para Início"
   },
+  "presetCategories": {
+    "stepTitle": "Configure suas categorias",
+    "stepSubtitle": "Selecione as categorias com as quais deseja começar. Você sempre pode adicionar mais depois.",
+    "incomeGroup": "Receitas",
+    "expenseGroup": "Despesas",
+    "getStarted": "Começar",
+    "skip": "Pular",
+    "creating": "Criando...",
+    "successToast": "Categorias criadas com sucesso!",
+    "names": {
+      "Salary": "Salário",
+      "Freelance": "Freelance",
+      "Investments": "Investimentos",
+      "Food": "Alimentação",
+      "Transport": "Transporte",
+      "Housing": "Moradia",
+      "Entertainment": "Entretenimento",
+      "Healthcare": "Saúde",
+      "Utilities": "Contas",
+      "Shopping": "Compras",
+      "Education": "Educação"
+    }
+  },
   "months": {
     "1": "Janeiro",
     "2": "Fevereiro",

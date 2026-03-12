@@ -2,6 +2,7 @@
   "errors": {
     "notFound": "Categoria com ID {id} não encontrada",
     "alreadyExists": "Categoria com nome \"{name}\" e tipo \"{type}\" já existe",
-    "invalidType": "Tipo de categoria inválido: {type}"
+    "invalidType": "Tipo de categoria inválido: {type}",
+    "batchEmpty": "Pelo menos uma categoria é necessária"
   }
 }
