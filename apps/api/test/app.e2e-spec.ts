@@ -761,7 +761,6 @@ describe('Personal Finance API E2E', () => {
             categoryId,
             month: 1,
             year: 2026,
-            type: 'EXPENSE',
           })
           .expect(201);
 
@@ -780,7 +779,6 @@ describe('Personal Finance API E2E', () => {
             categoryId,
             month: 1,
             year: 2026,
-            type: 'EXPENSE',
           })
           .expect(401);
       });
@@ -794,7 +792,6 @@ describe('Personal Finance API E2E', () => {
             categoryId,
             month: 13,
             year: 2026,
-            type: 'EXPENSE',
           })
           .expect(400);
       });
@@ -808,7 +805,6 @@ describe('Personal Finance API E2E', () => {
             categoryId: '00000000-0000-0000-0000-000000000000',
             month: 1,
             year: 2026,
-            type: 'EXPENSE',
           })
           .expect(400);
       });
@@ -823,7 +819,6 @@ describe('Personal Finance API E2E', () => {
             categoryId,
             month: 2,
             year: 2026,
-            type: 'EXPENSE',
           })
           .expect(201);
 
@@ -836,7 +831,6 @@ describe('Personal Finance API E2E', () => {
             categoryId,
             month: 2,
             year: 2026,
-            type: 'EXPENSE',
           })
           .expect(409);
       });
@@ -876,7 +870,6 @@ describe('Personal Finance API E2E', () => {
             categoryId: testCatId,
             month: 3,
             year: 2026,
-            type: 'EXPENSE',
           });
 
         expect(budgetResponse.status).toBe(201);
@@ -937,7 +930,6 @@ describe('Personal Finance API E2E', () => {
             categoryId,
             month: 1,
             year: 2026,
-            type: 'EXPENSE',
           })
           .expect(200);
 
@@ -953,7 +945,6 @@ describe('Personal Finance API E2E', () => {
             categoryId,
             month: 1,
             year: 2026,
-            type: 'EXPENSE',
           })
           .expect(404);
       });
@@ -970,7 +961,6 @@ describe('Personal Finance API E2E', () => {
             categoryId,
             month: 5,
             year: 2026,
-            type: 'EXPENSE',
           });
 
         const budgetToDeleteId = createResponse.body.id;
