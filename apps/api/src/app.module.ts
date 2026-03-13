@@ -13,6 +13,7 @@ import { BudgetModule } from './modules/budgets/budget.module';
 import { AuthsModule } from './modules/auths/auths.module';
 import { SharedModule } from './modules/shared';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { UsersModule } from './modules/users/users.module';
 
 const envFileMap: Record<string, string> = {
   test: '.env.test',
@@ -49,6 +50,7 @@ const resolveEnvFilePath = () =>
     BudgetModule,
     AuthsModule,
     DashboardModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

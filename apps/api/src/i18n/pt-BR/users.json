@@ -1,0 +1,7 @@
+{
+  "errors": {
+    "notFound": "Usuário não encontrado",
+    "incorrectPassword": "Senha atual está incorreta",
+    "emailAlreadyExists": "Email já cadastrado"
+  }
+}

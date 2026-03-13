@@ -66,6 +66,12 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               >
                 {t('transactions')}
               </Link>
+              <Link
+                href="/settings/profile"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                {t('settings')}
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-2">
