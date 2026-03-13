@@ -20,7 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { TransactionType, CreateTransactionDto, Category } from '@/types';
+import { CreateTransactionDto, Category } from '@/types';
 import { toast } from 'sonner';
 import { ApiException } from '@/lib/api';
 import { categoriesApi } from '@/lib/categories';
@@ -28,7 +28,6 @@ import { categoriesApi } from '@/lib/categories';
 interface TransactionFormProps {
   initialData?: {
     amount: number;
-    type: TransactionType;
     categoryId: string;
     date: string;
     description?: string;
@@ -46,9 +45,6 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const [amount, setAmount] = useState<string>(
     initialData?.amount?.toString() || '',
-  );
-  const [type, setType] = useState<TransactionType | ''>(
-    initialData?.type || '',
   );
   const [categoryId, setCategoryId] = useState<string>(
     initialData?.categoryId || '',
@@ -93,11 +89,6 @@ export function TransactionForm({
       return;
     }
 
-    if (!type) {
-      toast.error(t('typeRequired'));
-      return;
-    }
-
     if (!categoryId) {
       toast.error(t('categoryRequired'));
       return;
@@ -112,7 +103,6 @@ export function TransactionForm({
     try {
       await onSubmit({
         amount: amountNum,
-        type,
         categoryId,
         date: new Date(date).toISOString(),
         description: description || undefined,
@@ -150,27 +140,6 @@ export function TransactionForm({
               required
               disabled={isLoading}
             />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="type">{tCommon('type')}</Label>
-            <Select
-              value={type}
-              onValueChange={(value) => setType(value as TransactionType)}
-              disabled={isLoading}
-            >
-              <SelectTrigger id="type">
-                <SelectValue placeholder={t('selectType')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={TransactionType.INCOME}>
-                  {tCommon('income')}
-                </SelectItem>
-                <SelectItem value={TransactionType.EXPENSE}>
-                  {tCommon('expense')}
-                </SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-2">

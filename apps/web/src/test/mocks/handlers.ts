@@ -557,15 +557,15 @@ export const handlers = [
     }
     const body = (await request.json()) as {
       amount: number;
-      type: string;
       categoryId: string;
       date: string;
       description?: string;
     };
+    const category = mockCategories.find((c) => c.id === body.categoryId);
     return HttpResponse.json({
       id: 'new-transaction-id',
       amount: body.amount.toFixed(2),
-      type: body.type,
+      type: category?.type ?? 'EXPENSE',
       categoryId: body.categoryId,
       date: body.date,
       description: body.description,
@@ -592,17 +592,21 @@ export const handlers = [
     }
     const body = (await request.json()) as {
       amount?: number;
-      type?: string;
       categoryId?: string;
       date?: string;
       description?: string;
     };
+    const newCategoryId = body.categoryId ?? transaction.categoryId;
+    const newCategory = mockCategories.find((c) => c.id === newCategoryId);
     return HttpResponse.json({
       ...transaction,
       amount:
         body.amount !== undefined ? body.amount.toFixed(2) : transaction.amount,
-      type: body.type ?? transaction.type,
-      categoryId: body.categoryId ?? transaction.categoryId,
+      type:
+        body.categoryId !== undefined
+          ? (newCategory?.type ?? transaction.type)
+          : transaction.type,
+      categoryId: newCategoryId,
       date: body.date ?? transaction.date,
       description: body.description ?? transaction.description,
       updatedAt: new Date().toISOString(),

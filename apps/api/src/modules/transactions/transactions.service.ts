@@ -23,22 +23,6 @@ export class TransactionsService {
     return I18nContext.current()?.lang ?? 'en';
   }
 
-  private normalizeTransactionType(type: string): TransactionType {
-    const normalized = type?.toUpperCase();
-    if (normalized === TransactionType.INCOME) {
-      return TransactionType.INCOME;
-    }
-    if (normalized === TransactionType.EXPENSE) {
-      return TransactionType.EXPENSE;
-    }
-    throw new BadRequestException(
-      this.i18n.t('transactions.errors.invalidType', {
-        args: { type },
-        lang: this.lang,
-      }),
-    );
-  }
-
   private mapTransaction(transaction: {
     id: string;
     amount: { toString(): string };
@@ -118,7 +102,7 @@ export class TransactionsService {
     const newTransaction = await this.prisma.transaction.create({
       data: {
         amount: createTransactionDto.amount,
-        type: this.normalizeTransactionType(createTransactionDto.type),
+        type: category.type as unknown as TransactionType,
         categoryId: createTransactionDto.categoryId,
         date: new Date(createTransactionDto.date),
         description: createTransactionDto.description,
@@ -149,6 +133,7 @@ export class TransactionsService {
     }
 
     // Validate category existence if categoryId is being updated
+    let newType: TransactionType | undefined;
     if (updateTransactionDto.categoryId !== undefined) {
       let category = null;
 
@@ -171,16 +156,15 @@ export class TransactionsService {
           }),
         );
       }
+
+      newType = category.type as unknown as TransactionType;
     }
 
     const updatedTransaction = await this.prisma.transaction.update({
       where: { id, userId },
       data: {
         amount: updateTransactionDto.amount,
-        type:
-          updateTransactionDto.type !== undefined
-            ? this.normalizeTransactionType(updateTransactionDto.type)
-            : undefined,
+        type: newType,
         categoryId: updateTransactionDto.categoryId,
         date:
           updateTransactionDto.date !== undefined

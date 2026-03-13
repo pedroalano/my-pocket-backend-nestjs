@@ -19,16 +19,6 @@ export class UpdateTransactionDto {
   amount?: number;
 
   @ApiProperty({
-    description: 'Transaction type',
-    example: 'EXPENSE',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(20)
-  type?: string;
-
-  @ApiProperty({
     description: 'Category UUID',
     example: '123e4567-e89b-12d3-a456-426614174000',
     required: false,

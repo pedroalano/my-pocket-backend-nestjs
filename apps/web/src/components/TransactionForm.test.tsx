@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 import { renderWithProviders, setupUser } from '@/test/test-utils';
 import { TransactionForm } from './TransactionForm';
-import { TransactionType } from '@/types';
 import { ApiException } from '@/lib/api';
 
 // Mock sonner toast
@@ -81,7 +80,6 @@ describe('TransactionForm', () => {
     );
 
     expect(screen.getByLabelText('Amount')).toBeInTheDocument();
-    expect(screen.getByLabelText('Type')).toBeInTheDocument();
     expect(screen.getByLabelText('Date')).toBeInTheDocument();
     expect(screen.getByLabelText('Description (optional)')).toBeInTheDocument();
   });
@@ -121,7 +119,6 @@ describe('TransactionForm', () => {
         submitLabel="Save"
         initialData={{
           amount: 150,
-          type: TransactionType.EXPENSE,
           categoryId: 'cat-2',
           date: '2026-03-05',
           description: 'Test description',
@@ -157,7 +154,6 @@ describe('TransactionForm', () => {
         submitLabel="Create"
         initialData={{
           amount: 100,
-          type: TransactionType.EXPENSE,
           categoryId: '',
           date: '2026-03-05',
         }}
@@ -173,29 +169,6 @@ describe('TransactionForm', () => {
     expect(mockOnSubmit).not.toHaveBeenCalled();
   });
 
-  it('should show error toast when type is not selected', async () => {
-    renderWithProviders(
-      <TransactionForm
-        title="Create Transaction"
-        submitLabel="Create"
-        initialData={{
-          amount: 100,
-          type: '' as TransactionType,
-          categoryId: 'cat-2',
-          date: '2026-03-05',
-        }}
-        onSubmit={mockOnSubmit}
-      />,
-    );
-
-    fireEvent.submit(document.querySelector('form')!);
-
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('Type is required');
-    });
-    expect(mockOnSubmit).not.toHaveBeenCalled();
-  });
-
   it('should submit form with valid data from initialData', async () => {
     renderWithProviders(
       <TransactionForm
@@ -203,7 +176,6 @@ describe('TransactionForm', () => {
         submitLabel="Create"
         initialData={{
           amount: 100,
-          type: TransactionType.EXPENSE,
           categoryId: 'cat-2',
           date: '2026-03-05',
           description: 'Test transaction',
@@ -217,7 +189,6 @@ describe('TransactionForm', () => {
     await waitFor(() => {
       expect(mockOnSubmit).toHaveBeenCalledWith({
         amount: 100,
-        type: TransactionType.EXPENSE,
         categoryId: 'cat-2',
         date: '2026-03-05T00:00:00.000Z',
         description: 'Test transaction',
@@ -237,7 +208,6 @@ describe('TransactionForm', () => {
         submitLabel="Save"
         initialData={{
           amount: 100,
-          type: TransactionType.EXPENSE,
           categoryId: 'cat-2',
           date: '2026-03-05',
         }}
@@ -265,7 +235,6 @@ describe('TransactionForm', () => {
         submitLabel="Create"
         initialData={{
           amount: 100,
-          type: TransactionType.EXPENSE,
           categoryId: 'cat-2',
           date: '2026-03-05',
         }}
@@ -289,7 +258,6 @@ describe('TransactionForm', () => {
         submitLabel="Create"
         initialData={{
           amount: 100,
-          type: TransactionType.EXPENSE,
           categoryId: 'cat-2',
           date: '2026-03-05',
         }}
@@ -314,7 +282,6 @@ describe('TransactionForm', () => {
         submitLabel="Create"
         initialData={{
           amount: 100,
-          type: TransactionType.EXPENSE,
           categoryId: 'cat-2',
           date: '2026-03-05',
         }}
@@ -357,7 +324,6 @@ describe('TransactionForm', () => {
         submitLabel="Create"
         initialData={{
           amount: -100,
-          type: TransactionType.EXPENSE,
           categoryId: 'cat-2',
           date: '2026-03-05',
         }}
@@ -380,7 +346,6 @@ describe('TransactionForm', () => {
         submitLabel="Create"
         initialData={{
           amount: 100,
-          type: TransactionType.INCOME,
           categoryId: 'cat-1',
           date: '2026-03-05',
         }}
@@ -393,7 +358,6 @@ describe('TransactionForm', () => {
     await waitFor(() => {
       expect(mockOnSubmit).toHaveBeenCalledWith({
         amount: 100,
-        type: TransactionType.INCOME,
         categoryId: 'cat-1',
         date: '2026-03-05T00:00:00.000Z',
         description: undefined,

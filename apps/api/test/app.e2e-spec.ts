@@ -475,7 +475,6 @@ describe('Personal Finance API E2E', () => {
           .set('Authorization', `Bearer ${user1Token}`)
           .send({
             amount: 50.5,
-            type: 'EXPENSE',
             categoryId: catId,
             date: '2026-01-15',
             description: 'Test transaction',
@@ -518,7 +517,6 @@ describe('Personal Finance API E2E', () => {
           .set('Authorization', `Bearer ${user1Token}`)
           .send({
             amount: 50.5,
-            type: 'EXPENSE',
             categoryId,
             date: '2026-01-15',
             description: 'Weekly groceries',
@@ -539,7 +537,6 @@ describe('Personal Finance API E2E', () => {
           .set('Authorization', `Bearer ${user1Token}`)
           .send({
             amount: 100,
-            type: 'INCOME',
             categoryId,
             date: '2026-01-16',
           })
@@ -554,7 +551,6 @@ describe('Personal Finance API E2E', () => {
           .post('/transactions')
           .send({
             amount: 100,
-            type: 'INCOME',
             categoryId,
             date: '2026-01-15',
           })
@@ -567,7 +563,6 @@ describe('Personal Finance API E2E', () => {
           .set('Authorization', `Bearer ${user1Token}`)
           .send({
             amount: 100,
-            type: 'INCOME',
             categoryId: '00000000-0000-0000-0000-000000000000',
             date: '2026-01-15',
           })
@@ -590,7 +585,6 @@ describe('Personal Finance API E2E', () => {
           .set('Authorization', `Bearer ${user1Token}`)
           .send({
             amount: 100,
-            type: 'EXPENSE',
             categoryId: user2CatResponse.body.id,
             date: '2026-01-15',
           })
@@ -603,7 +597,6 @@ describe('Personal Finance API E2E', () => {
           .set('Authorization', `Bearer ${user1Token}`)
           .send({
             amount: -50,
-            type: 'EXPENSE',
             categoryId,
             date: '2026-01-15',
           })
@@ -667,7 +660,6 @@ describe('Personal Finance API E2E', () => {
           .set('Authorization', `Bearer ${user1Token}`)
           .send({
             amount: 75.5,
-            type: 'EXPENSE',
             categoryId,
             date: '2026-01-20',
             description: 'Updated groceries',
@@ -692,7 +684,6 @@ describe('Personal Finance API E2E', () => {
           .set('Authorization', `Bearer ${user1Token}`)
           .send({
             amount: 100,
-            type: 'EXPENSE',
             categoryId: user2CatResponse.body.id,
             date: '2026-01-15',
           })
@@ -705,7 +696,6 @@ describe('Personal Finance API E2E', () => {
           .set('Authorization', `Bearer ${user2Token}`)
           .send({
             amount: 999,
-            type: 'EXPENSE',
             categoryId,
             date: '2026-01-15',
           })
@@ -721,7 +711,6 @@ describe('Personal Finance API E2E', () => {
           .set('Authorization', `Bearer ${user1Token}`)
           .send({
             amount: 25,
-            type: 'EXPENSE',
             categoryId,
             date: '2026-01-15',
           });
@@ -853,7 +842,6 @@ describe('Personal Finance API E2E', () => {
           .set('Authorization', `Bearer ${user1Token}`)
           .send({
             amount: 1000,
-            type: 'EXPENSE',
             categoryId: testCatId,
             date: '2026-03-15',
           });
@@ -1155,7 +1143,6 @@ describe('Personal Finance API E2E', () => {
         .set('Authorization', `Bearer ${user2Token}`)
         .send({
           amount: 999,
-          type: 'EXPENSE',
           categoryId,
           date: '2026-01-15',
         })
@@ -1184,7 +1171,6 @@ describe('Personal Finance API E2E', () => {
         .set('Authorization', `Bearer ${user1Token}`)
         .send({
           amount: 200,
-          type: 'EXPENSE',
           categoryId: user1Category.body.id,
           date: '2026-04-15',
         });
@@ -1202,7 +1188,6 @@ describe('Personal Finance API E2E', () => {
         .set('Authorization', `Bearer ${user2Token}`)
         .send({
           amount: 50,
-          type: 'EXPENSE',
           categoryId: user2Category.body.id,
           date: '2026-04-15',
         });

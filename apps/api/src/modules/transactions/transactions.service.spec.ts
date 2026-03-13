@@ -157,7 +157,6 @@ describe('TransactionsService', () => {
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
@@ -190,7 +189,6 @@ describe('TransactionsService', () => {
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
@@ -215,7 +213,6 @@ describe('TransactionsService', () => {
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
@@ -236,7 +233,6 @@ describe('TransactionsService', () => {
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
@@ -260,7 +256,6 @@ describe('TransactionsService', () => {
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
@@ -283,7 +278,6 @@ describe('TransactionsService', () => {
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId: otherCategoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
@@ -304,7 +298,6 @@ describe('TransactionsService', () => {
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
@@ -316,6 +309,38 @@ describe('TransactionsService', () => {
       expect(allTransactions.length).toBe(1);
       expect(allTransactions[0].amount).toBe('1000.00');
     });
+
+    it('should derive INCOME type from INCOME category', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        ...buildCategory(categoryId, 'Salary'),
+        type: CategoryType.INCOME,
+      });
+
+      const createDto: CreateTransactionDto = {
+        amount: 1000,
+        categoryId,
+        date: '2025-01-01',
+      };
+
+      const transaction = await service.createTransaction(createDto, userId);
+      expect(transaction.type).toBe(TransactionType.INCOME);
+    });
+
+    it('should derive EXPENSE type from EXPENSE category', async () => {
+      jest.spyOn(categoriesService, 'getCategoryById').mockResolvedValue({
+        ...buildCategory(categoryId, 'Groceries'),
+        type: CategoryType.EXPENSE,
+      });
+
+      const createDto: CreateTransactionDto = {
+        amount: 50,
+        categoryId,
+        date: '2025-01-01',
+      };
+
+      const transaction = await service.createTransaction(createDto, userId);
+      expect(transaction.type).toBe(TransactionType.EXPENSE);
+    });
   });
 
   describe('updateTransaction', () => {
@@ -326,7 +351,6 @@ describe('TransactionsService', () => {
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
@@ -370,7 +394,6 @@ describe('TransactionsService', () => {
       const updateDto: UpdateTransactionDto = {
         amount: 2000,
         description: 'Bonus payment',
-        type: 'expense',
       };
 
       const [existing] = await service.getAllTransactions(userId);
@@ -385,14 +408,13 @@ describe('TransactionsService', () => {
       }
       expect(updated.amount).toBe('2000.00');
       expect(updated.description).toBe('Bonus payment');
-      expect(updated.type).toBe(TransactionType.EXPENSE);
+      expect(updated.type).toBe(TransactionType.INCOME);
       expect(updated.date).toBe('2025-01-01T00:00:00.000Z');
     });
 
     it('should validate category when updating categoryId', async () => {
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
@@ -456,7 +478,6 @@ describe('TransactionsService', () => {
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
@@ -479,6 +500,57 @@ describe('TransactionsService', () => {
         throw new Error('Expected updated transaction to be defined');
       }
       expect(updated.categoryId).toBe(otherCategoryId);
+    });
+
+    it('should update type to match new category type when categoryId changes', async () => {
+      jest
+        .spyOn(categoriesService, 'getCategoryById')
+        .mockResolvedValueOnce({
+          ...buildCategory(categoryId, 'Salary'),
+          type: CategoryType.INCOME,
+        })
+        .mockResolvedValueOnce({
+          ...buildCategory(otherCategoryId, 'Groceries'),
+          type: CategoryType.EXPENSE,
+        });
+
+      const createDto: CreateTransactionDto = {
+        amount: 1000,
+        categoryId,
+        date: '2025-01-01',
+      };
+
+      await service.createTransaction(createDto, userId);
+
+      const [existing] = await service.getAllTransactions(userId);
+      expect(existing.type).toBe(TransactionType.INCOME);
+
+      const updated = await service.updateTransaction(
+        existing.id,
+        { categoryId: otherCategoryId },
+        userId,
+      );
+
+      if (!updated) {
+        throw new Error('Expected updated transaction to be defined');
+      }
+      expect(updated.type).toBe(TransactionType.EXPENSE);
+    });
+
+    it('should not change type when categoryId is not updated', async () => {
+      const [existing] = await service.getAllTransactions(userId);
+      expect(existing.type).toBe(TransactionType.INCOME);
+
+      const updated = await service.updateTransaction(
+        existing.id,
+        { amount: 9999 },
+        userId,
+      );
+
+      if (!updated) {
+        throw new Error('Expected updated transaction to be defined');
+      }
+      expect(updated.type).toBe(TransactionType.INCOME);
     });
 
     it('should return null when user tries to update another users transaction', async () => {
@@ -508,7 +580,6 @@ describe('TransactionsService', () => {
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
@@ -550,7 +621,6 @@ describe('TransactionsService', () => {
 
       const createDto: CreateTransactionDto = {
         amount: 1000,
-        type: 'income',
         categoryId,
         date: '2025-01-01',
         description: 'Monthly salary',
