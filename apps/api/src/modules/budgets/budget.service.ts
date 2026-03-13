@@ -298,10 +298,7 @@ export class BudgetService {
       );
     }
 
-    if (
-      budgetData.month !== undefined ||
-      budgetData.year !== undefined
-    ) {
+    if (budgetData.month !== undefined || budgetData.year !== undefined) {
       this.validateBudgetDataPartial(budgetData);
     }
 
