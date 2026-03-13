@@ -133,7 +133,6 @@ export interface Transaction {
 
 export interface CreateTransactionDto {
   amount: number;
-  type: TransactionType;
   categoryId: string;
   date: string;
   description?: string;
@@ -141,7 +140,6 @@ export interface CreateTransactionDto {
 
 export interface UpdateTransactionDto {
   amount?: number;
-  type?: TransactionType;
   categoryId?: string;
   date?: string;
   description?: string;

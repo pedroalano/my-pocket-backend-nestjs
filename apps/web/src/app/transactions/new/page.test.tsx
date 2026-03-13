@@ -36,7 +36,6 @@ describe('NewTransactionPage', () => {
 
     // Check form fields are present
     expect(screen.getByLabelText('Amount')).toBeInTheDocument();
-    expect(screen.getByLabelText('Type')).toBeInTheDocument();
     expect(screen.getByLabelText('Date')).toBeInTheDocument();
     expect(screen.getByLabelText('Description (optional)')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();

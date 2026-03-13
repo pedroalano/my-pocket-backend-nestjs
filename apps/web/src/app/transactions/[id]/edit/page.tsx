@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { transactionsApi } from '@/lib/transactions';
 import { TransactionForm } from '@/components/TransactionForm';
 import { AuthLayout } from '@/components/layouts/AuthLayout';
-import { Transaction, UpdateTransactionDto, TransactionType } from '@/types';
+import { Transaction, UpdateTransactionDto } from '@/types';
 import { toast } from 'sonner';
 import { ApiException } from '@/lib/api';
 
@@ -74,7 +74,6 @@ export default function EditTransactionPage() {
             submitLabel={tCommon('save')}
             initialData={{
               amount: parseFloat(transaction.amount),
-              type: transaction.type as TransactionType,
               categoryId: transaction.categoryId,
               date: formatDateForInput(transaction.date),
               description: transaction.description,
