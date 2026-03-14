@@ -19,4 +19,7 @@ export const envValidationSchema = Joi.object({
   }),
   RESEND_FROM_EMAIL: Joi.string().email().optional(),
   FRONTEND_URL: Joi.string().uri().optional().default('http://localhost:3000'),
+  LOG_LEVEL: Joi.string()
+    .valid('fatal', 'error', 'warn', 'info', 'debug', 'trace')
+    .default('info'),
 });

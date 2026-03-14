@@ -10,6 +10,9 @@ export const appConfig = registerAs('app', () => ({
   server: {
     port: parseNumber(process.env.PORT, 3000),
   },
+  logging: {
+    level: process.env.LOG_LEVEL ?? 'info',
+  },
 }));
 
 export const databaseConfig = registerAs('database', () => ({
