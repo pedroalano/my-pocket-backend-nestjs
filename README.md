@@ -262,6 +262,11 @@ Once the API is running, visit:
 | `/auths/login`                  | POST   | Login and get JWT token            |
 | `/auths/refresh`                | POST   | Exchange refresh token for new access + refresh tokens |
 | `/auths/logout`                 | POST   | Invalidate current refresh token (requires Bearer auth) |
+| `/users/me`                     | GET    | Get current user profile           |
+| `/users/me`                     | PATCH  | Update user display name           |
+| `/users/me/email`               | PATCH  | Update user email (409 on duplicate) |
+| `/users/me/password`            | PATCH  | Change password (verifies current, clears tokens) |
+| `/users/me`                     | DELETE | Delete account and all associated data |
 | `/categories`                   | GET    | List all categories                |
 | `/categories/:id`               | GET    | Get category by ID                 |
 | `/categories`                   | POST   | Create a new category              |
@@ -315,6 +320,7 @@ Once the API is running, visit:
 - ✅ Full CRUD for Categories, Transactions, and Budgets
 - ✅ Budget spending tracking with utilization indicators
 - ✅ Preset categories step on registration (11 common categories, fully optional)
+- ✅ User profile management: update name, email, password, and delete account (`/settings/profile`)
 - ✅ Responsive design with shadcn/ui components
 - ✅ Error boundary with recovery UI
 

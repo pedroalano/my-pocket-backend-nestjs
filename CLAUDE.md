@@ -62,6 +62,7 @@ This is a **Turborepo + npm workspaces** monorepo:
 
 **NestJS modular architecture** under `src/modules/`:
 - `auths` — registration, login, logout, refresh token rotation; JWT strategy (`jwt.strategy.ts`), guard (`jwt-auth.guard.ts`)
+- `users` — user profile management; `GET /users/me` (profile), `PATCH /users/me` (update name), `PATCH /users/me/email` (update email, 409 on duplicate), `PATCH /users/me/password` (verify current password, enforces complexity, clears refreshToken), `DELETE /users/me` (deletes account + all associated data via cascade); all endpoints are JWT-guarded
 - `categories` — CRUD + `POST /categories/batch` (creates multiple at once, silently skips P2002 duplicates, returns `{ created, skipped }`)
 - `transactions`, `budgets`, `dashboard` — domain modules, each with controller/service/dto
 - `health` — single `GET /health` endpoint for service availability checks
@@ -105,6 +106,8 @@ This is a **Turborepo + npm workspaces** monorepo:
 **Theme:** `ThemeProvider` (`src/contexts/ThemeProvider.tsx`) wraps the root layout and wires up `next-themes` with `attribute="class"`. The `ThemeToggle` component (`src/components/ThemeToggle.tsx`) renders a dropdown (Light / Dark / System) in the `AuthLayout` header. All page backgrounds and text use semantic Tailwind tokens (`bg-background`, `text-foreground`, `text-muted-foreground`, etc.) so they respond to the active theme.
 
 **i18n:** `next-intl` with cookie-based locale (`NEXT_LOCALE`). Locale resolver at `src/i18n/request.ts`. Message files at `messages/en.json` and `messages/pt-BR.json`. Root layout is `async` and wraps with `NextIntlClientProvider`. The `LanguageToggle` component (`src/components/LanguageToggle.tsx`) in `AuthLayout` sets the cookie and calls `router.refresh()`. All pages/components use `useTranslations(namespace)` — never hardcode UI strings. Month labels come from the `months` namespace (1–12). The `Accept-Language` header is derived from the `NEXT_LOCALE` cookie in `src/lib/api.ts` so backend errors arrive in the active language.
+
+**User dropdown:** A `UserCircle` icon button (shadcn/ui `DropdownMenu`, `aria-label="User menu"`) in the header right-controls groups Settings (`/settings/profile`) and Logout. Settings no longer appears as a standalone nav link.
 
 **Error handling:** `ErrorBoundary` (`src/components/ErrorBoundary.tsx`) wraps the app in `layout.tsx`. It is implemented as a functional component (`ErrorBoundary`) that renders an inner class component (`ErrorBoundaryInner`) — this allows the outer wrapper to call `useTranslations` while the class component handles `componentDidCatch`.
 
