@@ -67,7 +67,7 @@ describe('EditBudgetPage', () => {
 
     // Check that AuthLayout navigation is present
     expect(screen.getByRole('link', { name: 'My Pocket' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Logout' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'User menu' })).toBeInTheDocument();
   });
 
   it('handles 404 error and redirects to budgets list', async () => {

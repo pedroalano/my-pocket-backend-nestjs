@@ -517,6 +517,92 @@ export const handlers = [
     return HttpResponse.json(mockTopExpenses);
   }),
 
+  // Users endpoints
+  http.get(`${API_URL}/users/me`, ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    return HttpResponse.json({
+      id: mockUser.id,
+      name: mockUser.name,
+      email: mockUser.email,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+  }),
+
+  http.patch(`${API_URL}/users/me`, async ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    const body = (await request.json()) as { name: string };
+    return HttpResponse.json({
+      id: mockUser.id,
+      name: body.name,
+      email: mockUser.email,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+  }),
+
+  http.patch(`${API_URL}/users/me/password`, async ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    const body = (await request.json()) as { currentPassword: string };
+    if (body.currentPassword === 'WrongPassword1') {
+      return HttpResponse.json(
+        { message: 'Current password is incorrect', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    return HttpResponse.json({});
+  }),
+
+  http.patch(`${API_URL}/users/me/email`, async ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    const body = (await request.json()) as { email: string };
+    if (body.email === 'taken@example.com') {
+      return HttpResponse.json(
+        { message: 'Email already exists', statusCode: 409 },
+        { status: 409 },
+      );
+    }
+    return HttpResponse.json({
+      id: mockUser.id,
+      name: mockUser.name,
+      email: body.email,
+      createdAt: '2026-01-01T00:00:00.000Z',
+    });
+  }),
+
+  http.delete(`${API_URL}/users/me`, ({ request }) => {
+    const auth = request.headers.get('Authorization');
+    if (!auth?.startsWith('Bearer ')) {
+      return HttpResponse.json(
+        { message: 'Unauthorized', statusCode: 401 },
+        { status: 401 },
+      );
+    }
+    return new HttpResponse(null, { status: 204 });
+  }),
+
   // Transactions endpoints
   http.get(`${API_URL}/transactions`, ({ request }) => {
     const auth = request.headers.get('Authorization');

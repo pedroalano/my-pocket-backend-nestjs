@@ -1116,6 +1116,167 @@ describe('Personal Finance API E2E', () => {
     });
   });
 
+  // ==================== USERS (/users/me) ====================
+  describe('Users (/users/me)', () => {
+    const userForProfile = {
+      name: 'Profile User',
+      email: `profile-user-${Date.now()}@test.com`,
+      password: 'ProfilePassword1!',
+    };
+    let profileUserToken: string;
+
+    // Dedicated user for destructive tests (password change, delete)
+    const userForDestructive = {
+      name: 'Destructive User',
+      email: `destructive-user-${Date.now()}@test.com`,
+      password: 'DestructivePassword1!',
+    };
+    let destructiveUserToken: string;
+
+    beforeAll(async () => {
+      profileUserToken = await registerAndGetToken(userForProfile);
+      destructiveUserToken = await registerAndGetToken(userForDestructive);
+    });
+
+    describe('GET /users/me', () => {
+      it('should return user profile without password', async () => {
+        const response = await request(app.getHttpServer())
+          .get('/users/me')
+          .set('Authorization', `Bearer ${profileUserToken}`)
+          .expect(200);
+
+        expect(response.body).toHaveProperty('id');
+        expect(response.body).toHaveProperty('name', userForProfile.name);
+        expect(response.body).toHaveProperty('email', userForProfile.email);
+        expect(response.body).toHaveProperty('createdAt');
+        expect(response.body).not.toHaveProperty('password');
+        expect(response.body).not.toHaveProperty('refreshToken');
+      });
+
+      it('should return 401 without token', async () => {
+        await request(app.getHttpServer()).get('/users/me').expect(401);
+      });
+    });
+
+    describe('PATCH /users/me', () => {
+      it('should update user name', async () => {
+        const response = await request(app.getHttpServer())
+          .patch('/users/me')
+          .set('Authorization', `Bearer ${profileUserToken}`)
+          .send({ name: 'Updated Name' })
+          .expect(200);
+
+        expect(response.body).toHaveProperty('name', 'Updated Name');
+        expect(response.body).not.toHaveProperty('password');
+      });
+
+      it('should reject empty name', async () => {
+        await request(app.getHttpServer())
+          .patch('/users/me')
+          .set('Authorization', `Bearer ${profileUserToken}`)
+          .send({ name: '' })
+          .expect(400);
+      });
+
+      it('should return 401 without token', async () => {
+        await request(app.getHttpServer())
+          .patch('/users/me')
+          .send({ name: 'Test' })
+          .expect(401);
+      });
+    });
+
+    describe('PATCH /users/me/password', () => {
+      it('should return 401 when current password is wrong', async () => {
+        await request(app.getHttpServer())
+          .patch('/users/me/password')
+          .set('Authorization', `Bearer ${destructiveUserToken}`)
+          .send({
+            currentPassword: 'WrongPassword1!',
+            newPassword: 'NewPassword1!',
+          })
+          .expect(401);
+      });
+
+      it('should update password with correct current password', async () => {
+        await request(app.getHttpServer())
+          .patch('/users/me/password')
+          .set('Authorization', `Bearer ${destructiveUserToken}`)
+          .send({
+            currentPassword: userForDestructive.password,
+            newPassword: 'NewDestructivePassword1!',
+          })
+          .expect(200);
+      });
+
+      it('should reject weak new password', async () => {
+        await request(app.getHttpServer())
+          .patch('/users/me/password')
+          .set('Authorization', `Bearer ${profileUserToken}`)
+          .send({
+            currentPassword: userForProfile.password,
+            newPassword: 'weak',
+          })
+          .expect(400);
+      });
+    });
+
+    describe('PATCH /users/me/email', () => {
+      it('should update email to a new unique address', async () => {
+        const newEmail = `updated-profile-${Date.now()}@test.com`;
+        const response = await request(app.getHttpServer())
+          .patch('/users/me/email')
+          .set('Authorization', `Bearer ${profileUserToken}`)
+          .send({ email: newEmail })
+          .expect(200);
+
+        expect(response.body).toHaveProperty('email', newEmail);
+      });
+
+      it('should return 409 on duplicate email', async () => {
+        await request(app.getHttpServer())
+          .patch('/users/me/email')
+          .set('Authorization', `Bearer ${profileUserToken}`)
+          .send({ email: seededUser2.email })
+          .expect(409);
+      });
+
+      it('should return 400 for invalid email format', async () => {
+        await request(app.getHttpServer())
+          .patch('/users/me/email')
+          .set('Authorization', `Bearer ${profileUserToken}`)
+          .send({ email: 'not-an-email' })
+          .expect(400);
+      });
+    });
+
+    describe('DELETE /users/me', () => {
+      it('should delete account and return 204', async () => {
+        const userToDelete = {
+          name: 'Delete Me',
+          email: `delete-me-${Date.now()}@test.com`,
+          password: 'DeletePassword1!',
+        };
+        const deleteToken = await registerAndGetToken(userToDelete);
+
+        await request(app.getHttpServer())
+          .delete('/users/me')
+          .set('Authorization', `Bearer ${deleteToken}`)
+          .expect(204);
+
+        // Verify user can no longer authenticate
+        await request(app.getHttpServer())
+          .post('/auths/login')
+          .send({ email: userToDelete.email, password: userToDelete.password })
+          .expect(401);
+      });
+
+      it('should return 401 without token', async () => {
+        await request(app.getHttpServer()).delete('/users/me').expect(401);
+      });
+    });
+  });
+
   // ==================== USER ISOLATION ====================
   describe('User Isolation', () => {
     it('should not allow user1 to access user2 data', async () => {

@@ -37,6 +37,7 @@
     "categories": "Categorias",
     "budgets": "Orçamentos",
     "transactions": "Transações",
+    "settings": "Configurações",
     "logout": "Sair"
   },
   "home": {
@@ -223,6 +224,38 @@
       "Shopping": "Compras",
       "Education": "Educação"
     }
+  },
+  "settings": {
+    "title": "Configurações",
+    "profileCard": "Perfil",
+    "profileDescription": "Atualize seu nome de exibição.",
+    "accountCard": "Conta",
+    "accountDescription": "Atualize seu endereço de email ou altere sua senha.",
+    "dangerCard": "Zona de Perigo",
+    "dangerDescription": "Exclua permanentemente sua conta e todos os dados associados.",
+    "name": "Nome",
+    "namePlaceholder": "João Silva",
+    "saveName": "Salvar Nome",
+    "savingName": "Salvando...",
+    "email": "Email",
+    "emailPlaceholder": "voce@exemplo.com",
+    "updateEmail": "Atualizar Email",
+    "updatingEmail": "Atualizando...",
+    "currentPassword": "Senha Atual",
+    "newPassword": "Nova Senha",
+    "confirmNewPassword": "Confirmar Nova Senha",
+    "changePassword": "Alterar Senha",
+    "changingPassword": "Alterando...",
+    "deleteAccount": "Excluir Conta",
+    "deleteAccountTitle": "Tem absoluta certeza?",
+    "deleteAccountDescription": "Esta ação não pode ser desfeita. Isso excluirá permanentemente sua conta e removerá todos os seus dados.",
+    "deleteAccountConfirm": "Sim, excluir minha conta",
+    "loadError": "Falha ao carregar perfil",
+    "nameUpdateSuccess": "Nome atualizado com sucesso",
+    "emailUpdateSuccess": "Email atualizado com sucesso",
+    "passwordUpdateSuccess": "Senha atualizada. Você será desconectado em breve.",
+    "passwordMismatch": "As novas senhas não coincidem",
+    "passwordComplexity": "A senha deve conter pelo menos uma letra maiúscula, uma letra minúscula e um número"
   },
   "months": {
     "1": "Janeiro",

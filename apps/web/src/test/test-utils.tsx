@@ -29,6 +29,7 @@ const mockAuthContextValue = {
   login: vi.fn(),
   register: vi.fn(),
   logout: vi.fn(),
+  updateUser: vi.fn(),
 };
 
 function AuthenticatedProviders({ children }: WrapperProps) {

@@ -29,6 +29,26 @@ export interface User {
   name: string;
 }
 
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface UpdateProfileDto {
+  name: string;
+}
+
+export interface UpdateEmailDto {
+  email: string;
+}
+
+export interface UpdatePasswordDto {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;

@@ -37,6 +37,7 @@
     "categories": "Categories",
     "budgets": "Budgets",
     "transactions": "Transactions",
+    "settings": "Settings",
     "logout": "Logout"
   },
   "home": {
@@ -223,6 +224,38 @@
       "Shopping": "Shopping",
       "Education": "Education"
     }
+  },
+  "settings": {
+    "title": "Settings",
+    "profileCard": "Profile",
+    "profileDescription": "Update your display name.",
+    "accountCard": "Account",
+    "accountDescription": "Update your email address or change your password.",
+    "dangerCard": "Danger Zone",
+    "dangerDescription": "Permanently delete your account and all associated data.",
+    "name": "Name",
+    "namePlaceholder": "John Doe",
+    "saveName": "Save Name",
+    "savingName": "Saving...",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "updateEmail": "Update Email",
+    "updatingEmail": "Updating...",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "changePassword": "Change Password",
+    "changingPassword": "Changing...",
+    "deleteAccount": "Delete Account",
+    "deleteAccountTitle": "Are you absolutely sure?",
+    "deleteAccountDescription": "This action cannot be undone. This will permanently delete your account and remove all your data.",
+    "deleteAccountConfirm": "Yes, delete my account",
+    "loadError": "Failed to load profile",
+    "nameUpdateSuccess": "Name updated successfully",
+    "emailUpdateSuccess": "Email updated successfully",
+    "passwordUpdateSuccess": "Password updated. You will be logged out shortly.",
+    "passwordMismatch": "New passwords do not match",
+    "passwordComplexity": "Password must contain at least one uppercase letter, one lowercase letter, and one number"
   },
   "months": {
     "1": "January",
