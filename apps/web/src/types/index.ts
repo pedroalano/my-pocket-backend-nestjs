@@ -65,6 +65,19 @@ export interface AuthResponse {
   refresh_token: string;
 }
 
+export interface ForgotPasswordDto {
+  email: string;
+}
+
+export interface ResetPasswordDto {
+  token: string;
+  newPassword: string;
+}
+
+export interface MessageResponse {
+  message: string;
+}
+
 // Budget types
 export enum BudgetType {
   INCOME = 'INCOME',

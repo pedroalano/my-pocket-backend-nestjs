@@ -25,4 +25,19 @@ export const jwtConfig = registerAs('jwt', () => ({
   ),
 }));
 
-export const configurations = [appConfig, databaseConfig, jwtConfig];
+export const resendConfig = registerAs('resend', () => ({
+  apiKey: process.env.RESEND_API_KEY ?? '',
+  fromEmail: process.env.RESEND_FROM_EMAIL ?? 'noreply@yourdomain.com',
+}));
+
+export const frontendConfig = registerAs('frontend', () => ({
+  url: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+}));
+
+export const configurations = [
+  appConfig,
+  databaseConfig,
+  jwtConfig,
+  resendConfig,
+  frontendConfig,
+];

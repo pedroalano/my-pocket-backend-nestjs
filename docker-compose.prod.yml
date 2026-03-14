@@ -30,6 +30,9 @@ services:
       JWT_REFRESH_EXPIRATION: 604800
       PORT: 3001
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-noreply@yourdomain.com}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     ports:
       - '3001:3001'
     depends_on:

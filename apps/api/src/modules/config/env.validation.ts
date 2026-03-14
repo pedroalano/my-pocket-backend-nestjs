@@ -12,4 +12,11 @@ export const envValidationSchema = Joi.object({
   JWT_EXPIRATION: Joi.number().integer().positive().default(900),
   JWT_REFRESH_EXPIRATION: Joi.number().integer().positive().default(604800),
   CORS_ORIGINS: Joi.string().optional(),
+  RESEND_API_KEY: Joi.when('NODE_ENV', {
+    is: 'test',
+    then: Joi.string().optional().allow(''),
+    otherwise: Joi.string().required(),
+  }),
+  RESEND_FROM_EMAIL: Joi.string().email().optional(),
+  FRONTEND_URL: Joi.string().uri().optional().default('http://localhost:3000'),
 });

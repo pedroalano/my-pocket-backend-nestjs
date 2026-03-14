@@ -4,6 +4,8 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 export function ApiRegister() {
   return applyDecorators(
@@ -55,5 +57,32 @@ export function ApiLogout() {
     ApiOperation({ summary: 'Logout and invalidate the refresh token' }),
     ApiResponse({ status: 200, description: 'Logged out successfully' }),
     ApiResponse({ status: 401, description: 'Unauthorized' }),
+  );
+}
+
+export function ApiForgotPassword() {
+  return applyDecorators(
+    ApiOperation({ summary: 'Request a password reset email' }),
+    ApiBody({ type: ForgotPasswordDto }),
+    ApiResponse({
+      status: 200,
+      description: 'Password reset email sent (if account exists)',
+    }),
+    ApiResponse({ status: 400, description: 'Validation error' }),
+  );
+}
+
+export function ApiResetPassword() {
+  return applyDecorators(
+    ApiOperation({ summary: 'Reset password using a reset token' }),
+    ApiBody({ type: ResetPasswordDto }),
+    ApiResponse({
+      status: 200,
+      description: 'Password reset successfully',
+    }),
+    ApiResponse({
+      status: 400,
+      description: 'Invalid or expired reset token',
+    }),
   );
 }

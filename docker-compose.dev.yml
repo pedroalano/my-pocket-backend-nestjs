@@ -61,6 +61,8 @@ services:
       # Source code for hot-reload
       - ./apps/api/src:/app/apps/api/src
       - ./packages/shared/src:/app/packages/shared/src
+      # Environment file used by Nest ConfigModule in development
+      - ./.env:/app/apps/api/.env
       # Config files
       - ./apps/api/tsconfig.json:/app/apps/api/tsconfig.json
       - ./apps/api/tsconfig.build.json:/app/apps/api/tsconfig.build.json

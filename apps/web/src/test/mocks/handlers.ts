@@ -217,6 +217,27 @@ export const handlers = [
     return new HttpResponse(null, { status: 204 });
   }),
 
+  http.post(`${API_URL}/auths/forgot-password`, async () => {
+    return HttpResponse.json({
+      message:
+        'If an account with that email exists, a password reset link has been sent',
+    });
+  }),
+
+  http.post(`${API_URL}/auths/reset-password`, async ({ request }) => {
+    const body = (await request.json()) as {
+      token: string;
+      newPassword: string;
+    };
+    if (body.token === 'valid-reset-token') {
+      return HttpResponse.json({ message: 'Password has been reset successfully' });
+    }
+    return HttpResponse.json(
+      { message: 'Invalid or expired password reset token', statusCode: 400 },
+      { status: 400 },
+    );
+  }),
+
   // Categories endpoints
   http.get(`${API_URL}/categories`, ({ request }) => {
     const auth = request.headers.get('Authorization');

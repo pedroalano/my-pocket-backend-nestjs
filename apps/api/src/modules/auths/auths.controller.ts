@@ -10,17 +10,30 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { ApiTags } from '@nestjs/swagger';
 import { AuthsService } from './auths.service';
-import { ApiRegister, ApiLogin, ApiRefresh, ApiLogout } from './auths.swagger';
+import { PasswordResetService } from './password-reset.service';
+import {
+  ApiRegister,
+  ApiLogin,
+  ApiRefresh,
+  ApiLogout,
+  ApiForgotPassword,
+  ApiResetPassword,
+} from './auths.swagger';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 
 @ApiTags('auth')
 @Controller('auths')
 export class AuthsController {
-  constructor(private readonly authsService: AuthsService) {}
+  constructor(
+    private readonly authsService: AuthsService,
+    private readonly passwordResetService: PasswordResetService,
+  ) {}
 
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -53,5 +66,25 @@ export class AuthsController {
   ): Promise<{ message: string }> {
     await this.authsService.logout(req.user.userId);
     return { message: 'Logged out successfully' };
+  }
+
+  @Post('forgot-password')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiForgotPassword()
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
+    return this.passwordResetService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  @ApiResetPassword()
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+  ): Promise<{ message: string }> {
+    return this.passwordResetService.resetPassword(dto);
   }
 }

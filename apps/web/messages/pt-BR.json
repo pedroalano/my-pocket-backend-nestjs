@@ -65,7 +65,29 @@
     "alreadyHaveAccount": "Já tem uma conta?",
     "loginSuccess": "Login realizado com sucesso!",
     "registerSuccess": "Conta criada com sucesso!",
-    "passwordComplexity": "A senha deve conter pelo menos uma letra maiúscula, uma letra minúscula e um número"
+    "passwordComplexity": "A senha deve conter pelo menos uma letra maiúscula, uma letra minúscula e um número",
+    "forgotPassword": "Esqueceu a senha?"
+  },
+  "forgotPassword": {
+    "title": "Esqueci minha senha",
+    "subtitle": "Digite seu e-mail e enviaremos um link de redefinição",
+    "submit": "Enviar link de redefinição",
+    "submitting": "Enviando...",
+    "successTitle": "Verifique seu e-mail",
+    "successMessage": "Se existir uma conta com esse e-mail, um link de redefinição de senha foi enviado.",
+    "backToLogin": "Voltar para o login"
+  },
+  "resetPassword": {
+    "title": "Redefinir senha",
+    "subtitle": "Digite sua nova senha abaixo",
+    "newPassword": "Nova senha",
+    "confirmPassword": "Confirmar nova senha",
+    "submit": "Redefinir senha",
+    "submitting": "Redefinindo...",
+    "successMessage": "Senha redefinida com sucesso! Redirecionando para o login...",
+    "passwordMismatch": "As senhas não coincidem",
+    "missingToken": "Token inválido ou ausente. Solicite uma nova redefinição de senha.",
+    "backToLogin": "Voltar para o login"
   },
   "dashboard": {
     "title": "Painel",
