@@ -207,6 +207,36 @@ npm run docker:prod:down
 
 ---
 
+## Observability
+
+The production stack includes structured logging and a full log aggregation pipeline.
+
+### Stack
+| Service   | Port  | Description                                      |
+|-----------|-------|--------------------------------------------------|
+| Grafana   | 3500  | Dashboard UI — visualize and query logs          |
+| Loki      | 3100  | Log aggregation backend                          |
+| Promtail  | —     | Log collector (scrapes Docker container stdout)  |
+
+### How it works
+1. The API emits structured JSON logs to stdout via **nestjs-pino**
+2. **Promtail** scrapes Docker container logs from `/var/run/docker.sock` and forwards them to Loki, tagging each entry with `container` and `service` labels
+3. **Loki** stores and indexes the logs
+4. **Grafana** is pre-configured with Loki as the default datasource — open `http://<host>:3500` to query logs
+
+### Accessing Grafana
+- URL: `http://localhost:3500` (or your VPS IP/domain)
+- Username: `admin`
+- Password: value of `GRAFANA_ADMIN_PASSWORD` env var (default: `admin`)
+
+### Log levels
+Control log verbosity via the `LOG_LEVEL` environment variable (default: `info`).
+Valid values: `trace`, `debug`, `info`, `warn`, `error`, `fatal`.
+
+> The observability stack is only included in `docker-compose.prod.yml`.
+
+---
+
 ## 📦 Available Scripts
 
 ### Development

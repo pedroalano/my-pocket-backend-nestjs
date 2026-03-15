@@ -87,6 +87,8 @@ This is a **Turborepo + npm workspaces** monorepo:
 
 **Swagger** is served at `/docs` (not `/api`).
 
+**Logging:** `nestjs-pino` with `LoggerModule.forRootAsync()` in `app.module.ts`. In production, logs are emitted as JSON to stdout; in development, `pino-pretty` is used (colorized, single-line). Every log entry includes a `userId` field extracted from the JWT. The `/health` endpoint is excluded from access logs. Log level is controlled by the `LOG_LEVEL` env var (default: `info`). The aggregation stack (Loki + Promtail + Grafana) is defined in `docker-compose.prod.yml` only.
+
 **i18n:** `nestjs-i18n` with `AcceptLanguageResolver`. Translation JSON files in `src/i18n/en/` and `src/i18n/pt-BR/` (one file per module: `auth`, `categories`, `transactions`, `budgets`, `dashboard`, `validation`). All service error messages use `this.i18n.t('module.errors.key', { args, lang })`. `I18nValidationPipe` and `I18nValidationExceptionFilter` replace the default NestJS pipe in `main.ts`. In unit tests, mock `I18nService` as `{ t: jest.fn((key) => key) }`.
 
 ### Frontend (`apps/web`)
